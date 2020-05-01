@@ -1,0 +1,112 @@
+#
+# Cilium runtime base image
+#
+FROM docker.io/library/ubuntu:18.04 as runtime-base
+COPY runtime-deps.sh  /tmp/runtime-deps.sh
+RUN /tmp/runtime-deps.sh
+
+#
+# Build Cilium runtime dependencies.
+#
+FROM runtime-base as runtime-build
+ARG ARCH=amd64
+WORKDIR /tmp
+RUN \
+#
+# Build dependencies
+#
+apt-get update && \
+apt-get install -y --no-install-recommends \
+# Base runtime-build dependencies
+  make curl ca-certificates xz-utils binutils \
+# Additional iproute2 build dependencies
+  gcc git pkg-config bison flex build-essential libelf-dev libmnl-dev \
+# Additional bpftool dependencies
+  python3 \
+# Additional clang/llvm dependencies
+  cmake ninja-build && \
+#
+# iproute2
+#
+git clone --depth 1 -b static-data https://github.com/cilium/iproute2.git iproute2 && \
+cd iproute2 && \
+git --no-pager remote -v && \
+git --no-pager log -1 && \
+./configure && \
+make -j `getconf _NPROCESSORS_ONLN` && \
+strip tc/tc && \
+strip ip/ip && \
+cd .. && \
+#
+# clang/llvm image with only BPF backend
+#
+git clone -b master https://github.com/llvm/llvm-project.git llvm && \
+mkdir -p llvm/llvm/build/install && \
+cd llvm/ && \
+git checkout -b d941df363d1cb621a3836b909c37d79f2a3e27e2 d941df363d1cb621a3836b909c37d79f2a3e27e2 && \
+git --no-pager remote -v && \
+git --no-pager log -1 && \
+cd llvm/build && \
+cmake .. -G "Ninja" -DLLVM_TARGETS_TO_BUILD="BPF" -DLLVM_ENABLE_PROJECTS="clang" -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_RUNTIME=OFF && \
+ninja clang llc && \
+strip bin/clang && \
+strip bin/llc && \
+cp bin/clang /usr/bin/clang && \
+cp bin/llc /usr/bin/llc && \
+cd ../../../ && \
+#
+# bpftool
+#
+git clone --depth 1 -b master git://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git linux && \
+cd linux/tools/bpf/bpftool/ && \
+git --no-pager remote -v && \
+git --no-pager log -1 && \
+make -j `getconf _NPROCESSORS_ONLN` && \
+strip bpftool && \
+cd ../../../../ && \
+#
+# cni/loopback
+#
+curl -sS -L https://github.com/containernetworking/plugins/releases/download/v0.7.5/cni-plugins-${ARCH}-v0.7.5.tgz -o cni.tar.gz && \
+tar -xvf cni.tar.gz ./loopback && \
+strip -s ./loopback && \
+#
+# Cleanup
+#
+apt-get purge --auto-remove -y \
+# Base runtime-build dependencies
+  make curl ca-certificates xz-utils binutils \
+# Additional iproute2 build dependencies
+  gcc git pkg-config bison flex build-essential libelf-dev libmnl-dev \
+# Additional bpftool dependencies
+  python3 \
+# Additional clang/llvm dependencies
+  cmake ninja-build && \
+apt-get clean && \
+rm -rf /var/lib/apt/lists/*
+
+#
+# Go-based tools we need at runtime
+#
+FROM docker.io/library/golang:1.14.2 as runtime-gobuild
+WORKDIR /tmp
+RUN go get -d github.com/google/gops && \
+cd /go/src/github.com/google/gops && \
+git checkout -b v0.3.6 v0.3.6 && \
+git --no-pager remote -v && \
+git --no-pager log -1 && \
+go install && \
+strip /go/bin/gops
+
+#
+# Stripped cilium runtime base image
+#
+FROM runtime-base
+LABEL maintainer="maintainer@cilium.io"
+WORKDIR /bin
+COPY --from=runtime-build /tmp/iproute2/tc/tc /tmp/iproute2/ip/ip ./
+COPY --from=runtime-build /tmp/linux/tools/bpf/bpftool/bpftool ./
+COPY --from=runtime-build /tmp/llvm/llvm/build/bin/clang /tmp/llvm/llvm/build/bin/llc ./
+COPY --from=runtime-gobuild /go/bin/gops ./
+WORKDIR /cni
+COPY --from=runtime-build /tmp/loopback ./
