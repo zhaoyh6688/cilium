@@ -279,8 +279,8 @@ docker-plugin-manifest:
 	$(QUIET) contrib/scripts/push_manifest.sh docker-plugin $(DOCKER_IMAGE_TAG)
 
 docker-image-runtime:
-	cd contrib/packaging/docker && $(CONTAINER_ENGINE) build --build-arg ARCH=$(GOARCH) -t "cilium/cilium-runtime:$(UTC_DATE)" -f Dockerfile.runtime .
-	$(QUIET)$(CONTAINER_ENGINE) tag cilium/cilium-runtime:$(UTC_DATE) cilium/cilium-runtime:$(UTC_DATE)-${GOARCH}
+	$(warning "'make $@' is deprecated, use 'make -f Makefile.images build-cilium-runtime-image'")
+	$(MAKE) -f Makefile.images build-cilium-runtime-image
 
 docker-cilium-runtime-manifest:
 	@$(ECHO_CHECK) contrib/scripts/push_manifest.sh cilium-runtime $(UTC_DATE)

@@ -1,0 +1,26 @@
+# Copyright 2017-2020 Authors of Cilium
+# SPDX-License-Identifier: Apache-2.0
+#
+include Makefile.defs
+
+GOARCH := $(shell go env GOARCH)
+
+CILIUM_RUNTIME_IMAGE_NAME ?= cilium/cilium-runtime
+CILIUM_RUNTIME_IMAGE_TAG ?= $(shell git ls-tree --full-tree @ -- images/cilium-runtime | awk '{ print $$3 }')
+
+CILIUM_BUILDER_IMAGE_NAME ?= cilium/cilium-builder
+CILIUM_BUILDER_IMAGE_TAG ?= $(shell git ls-tree --full-tree @ -- images/cilium-builder | awk '{ print $$3 }')
+
+build-cilium-runtime-image:
+	$(QUIET)DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build \
+	  --build-arg "ARCH=$(GOARCH)" \
+	  --tag "$(CILIUM_RUNTIME_IMAGE_NAME):$(CILIUM_RUNTIME_IMAGE_TAG)" \
+	  --tag "$(CILIUM_RUNTIME_IMAGE_NAME):$(CILIUM_RUNTIME_IMAGE_TAG)-$(GOARCH)" \
+	    images/cilium-runtime
+
+build-cilium-builder-image:
+	$(QUIET)DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build \
+	  --build-arg "ARCH=$(GOARCH)" \
+	  --tag "$(CILIUM_BUILDER_IMAGE_NAME):$(CILIUM_BUILDER_IMAGE_TAG)" \
+	  --tag "$(CILIUM_BUILDER_IMAGE_NAME):$(CILIUM_BUILDER_IMAGE_TAG)-$(GOARCH)" \
+	    images/cilium-builder
