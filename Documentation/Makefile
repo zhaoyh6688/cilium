@@ -9,7 +9,7 @@ include ../Makefile.quiet
 default: html
 
 clean:
-	-$(QUIET)rm -rf _build
+	-$(QUIET)rm -rf _build _preview
 
 builder-image: Dockerfile requirements.txt
 	$(QUIET)tar c requirements.txt Dockerfile \
@@ -42,6 +42,14 @@ epub latex html: builder-image
 	$(QUIET)cp -r ../api _api
 	@$(ECHO_GEN)_build/$@
 	$(QUIET)$(DOCKER_RUN) ./check-build.sh $(@) $(SPHINX_OPTS)
+
+live-preview:
+ifeq (, $(shell which pipenv))
+  $(error Please install pipenv: https://pipenv.pypa.io/en/latest/#install-pipenv-today)
+endif
+	pipenv install --three
+	pipenv run sphinx-autobuild $(SPHINX_OPTS) -q . _preview
+
 
 DOCS_PORT = 9081
 

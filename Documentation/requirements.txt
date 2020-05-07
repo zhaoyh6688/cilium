@@ -11,11 +11,12 @@ MarkupSafe==1.1.1
 pyenchant==2.0.0
 Pygments==2.4.2
 pytz==2018.7
-PyYAML==4.2b1
+PyYAML==5.3.1
 requests==2.20.0
 six==1.11.0
 snowballstemmer==1.2.1
 Sphinx==1.8.1
+sphinx-autobuild==0.7.1
 sphinx-rtd-theme==0.2.4
 sphinxcontrib-httpdomain==1.7.0
 sphinxcontrib-openapi==0.3.2
