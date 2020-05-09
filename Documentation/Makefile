@@ -9,7 +9,7 @@ include ../Makefile.quiet
 default: html
 
 clean:
-	-$(QUIET)rm -rf _build
+	-$(QUIET)rm -rf _build _preview Pipfile Pipfile.lock
 
 builder-image: Dockerfile requirements.txt
 	$(QUIET)tar c requirements.txt Dockerfile \
@@ -37,11 +37,17 @@ ifeq ($(V),0)
 SPHINX_OPTS += -q
 endif
 
-epub latex html: builder-image
+copy-api:
 	@$(ECHO_GEN)_api
 	$(QUIET)cp -r ../api _api
+
+epub latex html: builder-image copy-api
 	@$(ECHO_GEN)_build/$@
 	$(QUIET)$(DOCKER_RUN) ./check-build.sh $(@) $(SPHINX_OPTS)
+
+html-netlify: copy-api
+	@$(ECHO_GEN)_build/$@
+	$(QUIET) ./check-build.sh html $(SPHINX_OPTS)
 
 DOCS_PORT = 9081
 
@@ -61,3 +67,12 @@ run-server: stop-server
 
 stop-server:
 	-$(QUIET)$(CONTAINER_ENGINE) container rm --force --volumes docs-cilium
+
+pipenv:
+	@which pipenv > /dev/null || (echo "Please install pipenv: https://pipenv.pypa.io/en/latest/#install-pipenv-today"; exit 1)
+
+pipenv-install:
+	pipenv install --three -r requirements.txt
+
+live-preview: pipenv
+	pipenv run sphinx-autobuild $(SPHINX_OPTS) -i *.swp -q . _preview

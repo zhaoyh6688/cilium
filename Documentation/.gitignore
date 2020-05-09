@@ -1,2 +1,4 @@
-_build
 _api
+_build
+_preview
+Pipfile*
