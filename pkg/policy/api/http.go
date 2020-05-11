@@ -76,7 +76,7 @@ type PortRuleHTTP struct {
 	//
 	// If omitted or empty, all paths are all allowed.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	Path string `json:"path,omitempty"`
 
 	// Method is an extended POSIX regex matched against the method of a
@@ -84,7 +84,7 @@ type PortRuleHTTP struct {
 	//
 	// If omitted or empty, all methods are allowed.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	Method string `json:"method,omitempty"`
 
 	// Host is an extended POSIX regex matched against the host header of a
@@ -92,14 +92,14 @@ type PortRuleHTTP struct {
 	//
 	// If omitted or empty, the value of the host header is ignored.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	Host string `json:"host,omitempty"`
 
 	// Headers is a list of HTTP headers which must be present in the
 	// request. If omitted or empty, requests are allowed regardless of
 	// headers present.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	Headers []string `json:"headers,omitempty"`
 
 	// HeaderMatches is a list of HTTP headers which must be

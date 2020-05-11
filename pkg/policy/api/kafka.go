@@ -38,8 +38,9 @@ type PortRuleKafka struct {
 	//
 	// If omitted or empty, and if APIKey is not specified, then all keys are
 	// allowed.
-
-	// +optional
+	//
+	// +kubebuilder:validation:Enum=produce;consume
+	// +kubebuilder:validation:Optional
 	Role string `json:"role,omitempty"`
 
 	// APIKey is a case-insensitive string matched against the key of a
@@ -48,7 +49,7 @@ type PortRuleKafka struct {
 	//
 	// If omitted or empty, and if Role is not specified, then all keys are allowed.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	APIKey string `json:"apiKey,omitempty"`
 
 	// APIVersion is the version matched against the api version of the
@@ -57,7 +58,7 @@ type PortRuleKafka struct {
 	//
 	// If omitted or empty, all versions are allowed.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	APIVersion string `json:"apiVersion,omitempty"`
 
 	// ClientID is the client identifier as provided in the request.
@@ -73,7 +74,7 @@ type PortRuleKafka struct {
 	//
 	// If omitted or empty, all client identifiers are allowed.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	ClientID string `json:"clientID,omitempty"`
 
 	// Topic is the topic name contained in the message. If a Kafka request
@@ -90,7 +91,8 @@ type PortRuleKafka struct {
 	//
 	// If omitted or empty, all topics are allowed.
 	//
-	// +optional
+	// +kubebuilder:validation:MaxLength=255
+	// +kubebuilder:validation:Optional
 	Topic string `json:"topic,omitempty"`
 
 	// --------------------------------------------------------------------
@@ -100,10 +102,10 @@ type PortRuleKafka struct {
 	// apiKeyInt is the integer representation of expanded Role. It is a
 	// list of all low-level apiKeys to
 	// be expanded as per the value of Role
-	apiKeyInt KafkaRole
+	apiKeyInt KafkaRole `json:"-"`
 
 	// apiVersionInt is the integer representation of APIVersion
-	apiVersionInt *int16
+	apiVersionInt *int16 `json:"-"`
 }
 
 // List of Kafka apiKeys which have a topic in their

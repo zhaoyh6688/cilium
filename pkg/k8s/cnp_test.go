@@ -28,7 +28,7 @@ import (
 
 	"github.com/cilium/cilium/pkg/checker"
 	"github.com/cilium/cilium/pkg/defaults"
-	"github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
 	cilium_v2_client "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2/client"
 	clientset "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
 	"github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/fake"
@@ -135,7 +135,7 @@ func testUpdateCNPNodeStatusK8s(integrationTest bool, k8sVersion string, c *C) {
 				Enforcing:   true,
 				Revision:    1,
 				OK:          true,
-				LastUpdated: v2.Timestamp{},
+				LastUpdated: v2.NewTimestamp(),
 				Annotations: map[string]string{
 					"foo":                            "bar",
 					"i-will-disappear-in-2nd-update": "bar",
@@ -201,7 +201,7 @@ func testUpdateCNPNodeStatusK8s(integrationTest bool, k8sVersion string, c *C) {
 
 						// Ignore lastUpdated timestamp as it will mess up with
 						// the deepequals
-						n["lastUpdated"] = "0001-01-01T00:00:00Z"
+						n["lastUpdated"] = nil
 
 						// Remove k8s2 from the nodes status.
 						cnpsK8s1 := wantedCNPS.DeepCopy()
@@ -257,7 +257,7 @@ func testUpdateCNPNodeStatusK8s(integrationTest bool, k8sVersion string, c *C) {
 						// itself to the list of nodes.
 						// Ignore lastUpdated timestamp as it will mess up with
 						// the deepequals
-						cnpns["lastUpdated"] = "0001-01-01T00:00:00Z"
+						cnpns["lastUpdated"] = nil
 
 						// Remove k8s1 from the nodes status.
 						cnpsK8s2 := wantedCNPS.DeepCopy()
@@ -282,7 +282,7 @@ func testUpdateCNPNodeStatusK8s(integrationTest bool, k8sVersion string, c *C) {
 						return true, cnp.CiliumNetworkPolicy, nil
 					}
 					// codepath C-1.10) 3rd attempt
-					cnpns["lastUpdated"] = "0001-01-01T00:00:00Z"
+					cnpns["lastUpdated"] = nil
 
 					// Remove k8s2 from the nodes status.
 					cnpsK8s1 := wantedCNPS.DeepCopy()

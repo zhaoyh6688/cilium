@@ -20,6 +20,12 @@ TESTPKGS_EVAL := $(subst github.com/cilium/cilium/,,$(shell echo $(GOFILES) | \
 TESTPKGS ?= $(TESTPKGS_EVAL)
 GOLANGVERSION := $(shell $(GO) version 2>/dev/null | grep -Eo '(go[0-9].[0-9])')
 GOLANG_SRCFILES := $(shell for pkg in $(subst github.com/cilium/cilium/,,$(GOFILES)); do find $$pkg -name *.go -print; done | grep -v vendor | sort | uniq)
+BPF_FILES_EVAL := $(shell git ls-files $(ROOT_DIR)/bpf/ | grep -v .gitignore | tr "\n" ' ')
+BPF_FILES ?= $(BPF_FILES_EVAL)
+BPF_SRCFILES := $(subst ../,,$(BPF_FILES))
+K8S_CRD_EVAL := $(shell git ls-files $(ROOT_DIR)/examples/crds | grep -v .gitignore | tr "\n" ' ')
+K8S_CRD_FILES ?= $(K8S_CRD_EVAL)
+K8S_CRD_SRCFILES := $(subst ../,,$(K8S_CRD_FILES))
 
 SWAGGER_VERSION := v0.20.1
 SWAGGER := $(CONTAINER_ENGINE) run --rm -v $(CURDIR):$(CURDIR) -w $(CURDIR) --entrypoint swagger quay.io/goswagger/swagger:$(SWAGGER_VERSION)
@@ -338,6 +344,17 @@ docker-cilium-dev-manifest:
 	@$(ECHO_CHECK) contrib/scripts/push_manifest.sh cilium-dev $(DOCKER_IMAGE_TAG)
 	$(QUIET) contrib/scripts/push_manifest.sh cilium-dev $(DOCKER_IMAGE_TAG)
 
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+# Generate manifests e.g. CRD, RBAC etc.
+manifests:
+	$(eval TMPDIR := $(shell mktemp -d))
+	cd "./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen" && \
+	GO111MODULE=off go run ./... $(CRD_OPTIONS) paths="$(PWD)/pkg/k8s/apis/cilium.io/v2" output:crd:artifacts:config="$(TMPDIR)";
+	mv ${TMPDIR}/cilium.io_ciliumendpoints.yaml ./examples/crds/ciliumendpoints.yaml
+	mv ${TMPDIR}/cilium.io_ciliumidentities.yaml ./examples/crds/ciliumidentities.yaml
+	mv ${TMPDIR}/cilium.io_ciliumnetworkpolicies.yaml ./examples/crds/ciliumnetworkpolicies.yaml
+	mv ${TMPDIR}/cilium.io_ciliumnodes.yaml ./examples/crds/ciliumnodes.yaml
+
 docker-operator-image: GIT_VERSION
 	$(QUIET)$(CONTAINER_ENGINE) build \
 		--build-arg NOSTRIP=${NOSTRIP} \
@@ -467,6 +484,18 @@ generate-k8s-api:
 	pkg:labels\
 	pkg:loadbalancer\
 	pkg:tuple")
+
+K8S_VALIDATION := $(QUIET) go-bindata -pkg client
+
+.PHONY: check-bindata
+check-bindata: bindata.go
+	@echo "  CHECK contrib/scripts/bindata.sh"
+	$(QUIET) ./contrib/scripts/bindata.sh $(GO_BINDATA_SHA1SUM)
+
+go-bindata: $(K8S_CRD_FILES)
+	@$(ECHO_GEN) $@
+	$(K8S_VALIDATION) -o ./pkg/k8s/apis/cilium.io/v2/client/bindata.go $(K8S_CRD_FILES)
+
 
 vps:
 	VBoxManage list runningvms

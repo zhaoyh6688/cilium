@@ -23,7 +23,7 @@ import (
 	cilium_client_v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2/client"
 	"github.com/cilium/cilium/pkg/policy/api"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
