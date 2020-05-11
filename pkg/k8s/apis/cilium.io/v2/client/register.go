@@ -21,13 +21,12 @@ import (
 	"time"
 
 	k8sconst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
-	"github.com/cilium/cilium/pkg/k8s/version"
 	"github.com/cilium/cilium/pkg/logging"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/option"
 	"github.com/cilium/cilium/pkg/versioncheck"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -130,34 +129,34 @@ func createCNPCRD(clientset apiextensionsclient.Interface) error {
 		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
 	)
 
-	res := &apiextensionsv1beta1.CustomResourceDefinition{
+	res := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: CRDName,
 			Labels: map[string]string{
 				CustomResourceDefinitionSchemaVersionKey: CustomResourceDefinitionSchemaVersion,
 			},
 		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   SchemeGroupVersion.Group,
-			Version: SchemeGroupVersion.Version,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: SchemeGroupVersion.Group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:     CustomResourceDefinitionPluralName,
 				Singular:   CustomResourceDefinitionSingularName,
 				ShortNames: CustomResourceDefinitionShortNames,
 				Kind:       CustomResourceDefinitionKind,
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:   SchemeGroupVersion.Version,
+					Schema: &cnpCRV,
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
+					Served:  true,
+					Storage: true,
+				},
 			},
-			Scope:      apiextensionsv1beta1.NamespaceScoped,
-			Validation: &CNPCRV,
+			Scope: apiextensionsv1.NamespaceScoped,
 		},
-	}
-	// Kubernetes < 1.12 does not support having the field Type set in the root
-	// schema so we need to set it to empty if kube-apiserver does not supports
-	// it.
-	if !version.Capabilities().FieldTypeInCRDSchema {
-		res.Spec.Validation.OpenAPIV3Schema.Type = ""
 	}
 
 	return createUpdateCRD(clientset, "CiliumNetworkPolicy/v2", res)
@@ -182,34 +181,34 @@ func createCCNPCRD(clientset apiextensionsclient.Interface) error {
 		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
 	)
 
-	res := &apiextensionsv1beta1.CustomResourceDefinition{
+	res := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: CRDName,
 			Labels: map[string]string{
 				CustomResourceDefinitionSchemaVersionKey: CustomResourceDefinitionSchemaVersion,
 			},
 		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   SchemeGroupVersion.Group,
-			Version: SchemeGroupVersion.Version,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: SchemeGroupVersion.Group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:     CustomResourceDefinitionPluralName,
 				Singular:   CustomResourceDefinitionSingularName,
 				ShortNames: CustomResourceDefinitionShortNames,
 				Kind:       CustomResourceDefinitionKind,
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:   SchemeGroupVersion.Version,
+					Schema: &cnpCRV,
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
+					Served:  true,
+					Storage: true,
+				},
 			},
-			Scope:      apiextensionsv1beta1.ClusterScoped,
-			Validation: &CNPCRV,
+			Scope: apiextensionsv1.ClusterScoped,
 		},
-	}
-	// Kubernetes < 1.12 does not support having the field Type set in the root
-	// schema so we need to set it to empty if kube-apiserver does not supports
-	// it.
-	if !version.Capabilities().FieldTypeInCRDSchema {
-		res.Spec.Validation.OpenAPIV3Schema.Type = ""
 	}
 
 	return createUpdateCRD(clientset, "CiliumClusterwideNetworkPolicy/v2", res)
@@ -234,74 +233,80 @@ func createCEPCRD(clientset apiextensionsclient.Interface) error {
 		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
 	)
 
-	res := &apiextensionsv1beta1.CustomResourceDefinition{
+	res := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: CRDName,
 		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   SchemeGroupVersion.Group,
-			Version: SchemeGroupVersion.Version,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: SchemeGroupVersion.Group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:     CustomResourceDefinitionPluralName,
 				Singular:   CustomResourceDefinitionSingularName,
 				ShortNames: CustomResourceDefinitionShortNames,
 				Kind:       CustomResourceDefinitionKind,
 			},
-			AdditionalPrinterColumns: []apiextensionsv1beta1.CustomResourceColumnDefinition{
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
 				{
-					Name:        "Endpoint ID",
-					Type:        "integer",
-					Description: "Cilium endpoint id",
-					JSONPath:    ".status.id",
-				},
-				{
-					Name:        "Identity ID",
-					Type:        "integer",
-					Description: "Cilium identity id",
-					JSONPath:    ".status.identity.id",
-				},
-				{
-					Name:        "Ingress Enforcement",
-					Type:        "boolean",
-					Description: "Ingress enforcement in the endpoint",
-					JSONPath:    ".status.policy.ingress.enforcing",
-				},
-				{
-					Name:        "Egress Enforcement",
-					Type:        "boolean",
-					Description: "Egress enforcement in the endpoint",
-					JSONPath:    ".status.policy.egress.enforcing",
-				},
-				{
-					Name:        "Visibility Policy",
-					Type:        "string",
-					Description: "Status of visibility policy in the endpoint",
-					JSONPath:    ".status.visibility-policy-status",
-				},
-				{
-					Name:        "Endpoint State",
-					Type:        "string",
-					Description: "Endpoint current state",
-					JSONPath:    ".status.state",
-				},
-				{
-					Name:        "IPv4",
-					Type:        "string",
-					Description: "Endpoint IPv4 address",
-					JSONPath:    ".status.networking.addressing[0].ipv4",
-				},
-				{
-					Name:        "IPv6",
-					Type:        "string",
-					Description: "Endpoint IPv6 address",
-					JSONPath:    ".status.networking.addressing[0].ipv6",
+					Name:   SchemeGroupVersion.Version,
+					Schema: &cepCRV,
+					AdditionalPrinterColumns: []apiextensionsv1.CustomResourceColumnDefinition{
+						{
+							Name:        "Endpoint ID",
+							Type:        "integer",
+							Description: "Cilium endpoint id",
+							JSONPath:    ".status.id",
+						},
+						{
+							Name:        "Identity ID",
+							Type:        "integer",
+							Description: "Cilium identity id",
+							JSONPath:    ".status.identity.id",
+						},
+						{
+							Name:        "Ingress Enforcement",
+							Type:        "boolean",
+							Description: "Ingress enforcement in the endpoint",
+							JSONPath:    ".status.policy.ingress.enforcing",
+						},
+						{
+							Name:        "Egress Enforcement",
+							Type:        "boolean",
+							Description: "Egress enforcement in the endpoint",
+							JSONPath:    ".status.policy.egress.enforcing",
+						},
+						{
+							Name:        "Visibility Policy",
+							Type:        "string",
+							Description: "Status of visibility policy in the endpoint",
+							JSONPath:    ".status.visibility-policy-status",
+						},
+						{
+							Name:        "Endpoint State",
+							Type:        "string",
+							Description: "Endpoint current state",
+							JSONPath:    ".status.state",
+						},
+						{
+							Name:        "IPv4",
+							Type:        "string",
+							Description: "Endpoint IPv4 address",
+							JSONPath:    ".status.networking.addressing[0].ipv4",
+						},
+						{
+							Name:        "IPv6",
+							Type:        "string",
+							Description: "Endpoint IPv6 address",
+							JSONPath:    ".status.networking.addressing[0].ipv6",
+						},
+					},
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
+					Served:  true,
+					Storage: true,
 				},
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
-			},
-			Scope:      apiextensionsv1beta1.NamespaceScoped,
-			Validation: &cepCRV,
+			Scope: apiextensionsv1.NamespaceScoped,
 		},
 	}
 
@@ -327,129 +332,135 @@ func createNodeCRD(clientset apiextensionsclient.Interface) error {
 		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
 	)
 
-	res := &apiextensionsv1beta1.CustomResourceDefinition{
+	res := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: CRDName,
 		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   SchemeGroupVersion.Group,
-			Version: SchemeGroupVersion.Version,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: SchemeGroupVersion.Group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:     CustomResourceDefinitionPluralName,
 				Singular:   CustomResourceDefinitionSingularName,
 				ShortNames: CustomResourceDefinitionShortNames,
 				Kind:       CustomResourceDefinitionKind,
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
-			},
-			Scope: apiextensionsv1beta1.ClusterScoped,
-			Validation: &apiextensionsv1beta1.CustomResourceValidation{
-				OpenAPIV3Schema: &apiextensionsv1beta1.JSONSchemaProps{
-					Description: "CiliumNode represents the k8s node from the view of Cilium.",
-					Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
-						"spec": {
-							Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
-								"azure": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
-										"instance-id": {
-											Type:        "string",
-											Description: "instance-id is the Azure specific identifier of the node",
-										},
-										"interface-name": {
-											Type:        "string",
-											Description: "interface-name represents the name of the interface on which additional IP addreses will be allocated",
-										},
-									},
-								},
-								"eni": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
-										"min-allocate": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "min-allocate is the minimum number of IPs that will be allocated before the cilium-agent will write the CNI config.",
-										},
-										"max-allocate": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "max-allocate is the maximum number of IPs that will be allocated to the node.",
-										},
-										"pre-allocate": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "pre-allocate defines the number of IP addresses that must be available for allocation at all times.",
-										},
-										"max-above-watermark": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "max-above-watermark defines the number of addresses to allocate beyond what is needed to reach the PreAllocate watermark.",
-										},
-										"first-interface-index": {
-											Type:        "integer",
-											Description: "first-interface-index represents the start EC2 interface index at which the ENI will be attached at.",
-											Minimum:     getFloat64(0),
-										},
-										"security-groups": {
-											Type:        "array",
-											Description: "security-groups represents the list of AWS EC2 security groups which will be attached to the ENI.",
-											Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-												Schema: &apiextensionsv1beta1.JSONSchemaProps{
-													Type: "string",
+			Scope: apiextensionsv1.ClusterScoped,
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name: SchemeGroupVersion.Version,
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
+					Schema: &apiextensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+							Description: "CiliumNode represents the k8s node from the view of Cilium.",
+							Properties: map[string]apiextensionsv1.JSONSchemaProps{
+								"spec": {
+									Properties: map[string]apiextensionsv1.JSONSchemaProps{
+										"azure": {
+											Type: "object",
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
+												"instance-id": {
+													Type:        "string",
+													Description: "instance-id is the Azure specific identifier of the node",
+												},
+												"interface-name": {
+													Type:        "string",
+													Description: "interface-name represents the name of the interface on which additional IP addreses will be allocated",
 												},
 											},
 										},
-										"security-group-tags": {
-											Type:        "object",
-											Description: "security-group-tags represents a filter to narrow down the security group ids which will be attached on the allocated ENI",
+										"eni": {
+											Type: "object",
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
+												"min-allocate": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "min-allocate is the minimum number of IPs that will be allocated before the cilium-agent will write the CNI config.",
+												},
+												"max-allocate": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "max-allocate is the maximum number of IPs that will be allocated to the node.",
+												},
+												"pre-allocate": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "pre-allocate defines the number of IP addresses that must be available for allocation at all times.",
+												},
+												"max-above-watermark": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "max-above-watermark defines the number of addresses to allocate beyond what is needed to reach the PreAllocate watermark.",
+												},
+												"first-interface-index": {
+													Type:        "integer",
+													Description: "first-interface-index represents the start EC2 interface index at which the ENI will be attached at.",
+													Minimum:     getFloat64(0),
+												},
+												"security-groups": {
+													Type:        "array",
+													Description: "security-groups represents the list of AWS EC2 security groups which will be attached to the ENI.",
+													Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+														Schema: &apiextensionsv1.JSONSchemaProps{
+															Type: "string",
+														},
+													},
+												},
+												"security-group-tags": {
+													Type:        "object",
+													Description: "security-group-tags represents a filter to narrow down the security group ids which will be attached on the allocated ENI",
+												},
+												"subnet-tags": {
+													Type:        "object",
+													Description: "subnet-tags represents a filter to narrow down the available subnets in which the ENI will be allocated",
+												},
+												"vpc-id": {
+													Type:        "string",
+													Description: "vpc-id represents the AWS EC2 vpc-id in which the ENI will be allocated.",
+												},
+												"availability-zone": {
+													Type:        "string",
+													Description: "availability-zone represents the AWS availability-zone in which the ENI will be allocated.",
+												},
+												"delete-on-termination": {
+													Type:        "boolean",
+													Description: "delete-on-termination marks the ENI to be deleted when the EC2 instance is terminated.",
+												},
+											},
 										},
-										"subnet-tags": {
-											Type:        "object",
-											Description: "subnet-tags represents a filter to narrow down the available subnets in which the ENI will be allocated",
-										},
-										"vpc-id": {
-											Type:        "string",
-											Description: "vpc-id represents the AWS EC2 vpc-id in which the ENI will be allocated.",
-										},
-										"availability-zone": {
-											Type:        "string",
-											Description: "availability-zone represents the AWS availability-zone in which the ENI will be allocated.",
-										},
-										"delete-on-termination": {
-											Type:        "boolean",
-											Description: "delete-on-termination marks the ENI to be deleted when the EC2 instance is terminated.",
-										},
-									},
-								},
-								"ipam": {
-									Type: "object",
-									Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
-										"min-allocate": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "min-allocate is the minimum number of IPs that will be allocated before the cilium-agent will write the CNI config.",
-										},
-										"max-allocate": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "max-allocate is the maximum number of IPs that will be allocated to the node.",
-										},
-										"pre-allocate": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "pre-allocate is number of IP addresses that must be available for allocation at all times.",
-										},
-										"max-above-watermark": {
-											Type:        "integer",
-											Minimum:     getFloat64(0),
-											Description: "max-above-watermark defines the number of addresses to allocate beyond what is needed to reach the PreAllocate watermark.",
+										"ipam": {
+											Type: "object",
+											Properties: map[string]apiextensionsv1.JSONSchemaProps{
+												"min-allocate": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "min-allocate is the minimum number of IPs that will be allocated before the cilium-agent will write the CNI config.",
+												},
+												"max-allocate": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "max-allocate is the maximum number of IPs that will be allocated to the node.",
+												},
+												"pre-allocate": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "pre-allocate is number of IP addresses that must be available for allocation at all times.",
+												},
+												"max-above-watermark": {
+													Type:        "integer",
+													Minimum:     getFloat64(0),
+													Description: "max-above-watermark defines the number of addresses to allocate beyond what is needed to reach the PreAllocate watermark.",
+												},
+											},
 										},
 									},
 								},
 							},
 						},
 					},
+					Served:  true,
+					Storage: true,
 				},
 			},
 		},
@@ -478,23 +489,29 @@ func createIdentityCRD(clientset apiextensionsclient.Interface) error {
 		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
 	)
 
-	res := &apiextensionsv1beta1.CustomResourceDefinition{
+	res := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: CRDName,
 		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   SchemeGroupVersion.Group,
-			Version: SchemeGroupVersion.Version,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: SchemeGroupVersion.Group,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Plural:     CustomResourceDefinitionPluralName,
 				Singular:   CustomResourceDefinitionSingularName,
 				ShortNames: CustomResourceDefinitionShortNames,
 				Kind:       CustomResourceDefinitionKind,
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    SchemeGroupVersion.Version,
+					Served:  true,
+					Storage: true,
+					Subresources: &apiextensionsv1.CustomResourceSubresources{
+						Status: &apiextensionsv1.CustomResourceSubresourceStatus{},
+					},
+				},
 			},
-			Scope: apiextensionsv1beta1.ClusterScoped,
+			Scope: apiextensionsv1.ClusterScoped,
 		},
 	}
 
@@ -503,13 +520,13 @@ func createIdentityCRD(clientset apiextensionsclient.Interface) error {
 
 // createUpdateCRD ensures the CRD object is installed into the k8s cluster. It
 // will create or update the CRD and it's validation when needed
-func createUpdateCRD(clientset apiextensionsclient.Interface, CRDName string, crd *apiextensionsv1beta1.CustomResourceDefinition) error {
+func createUpdateCRD(clientset apiextensionsclient.Interface, CRDName string, crd *apiextensionsv1.CustomResourceDefinition) error {
 	scopedLog := log.WithField("name", CRDName)
 
-	clusterCRD, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(context.TODO(), crd.ObjectMeta.Name, metav1.GetOptions{})
+	clusterCRD, err := clientset.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.ObjectMeta.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		scopedLog.Info("Creating CRD (CustomResourceDefinition)...")
-		clusterCRD, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.TODO(), crd, metav1.CreateOptions{})
+		clusterCRD, err = clientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), crd, metav1.CreateOptions{})
 		// This occurs when multiple agents race to create the CRD. Since another has
 		// created it, it will also update it, hence the non-error return.
 		if errors.IsAlreadyExists(err) {
@@ -521,13 +538,13 @@ func createUpdateCRD(clientset apiextensionsclient.Interface, CRDName string, cr
 	}
 
 	scopedLog.Debug("Checking if CRD (CustomResourceDefinition) needs update...")
-	if crd.Spec.Validation != nil &&
+	if crd.Spec.Versions[0].Schema != nil &&
 		clusterCRD.Labels[CustomResourceDefinitionSchemaVersionKey] != "" &&
 		needsUpdate(clusterCRD) {
 		scopedLog.Info("Updating CRD (CustomResourceDefinition)...")
 		// Update the CRD with the validation schema.
 		err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-			clusterCRD, err = clientset.ApiextensionsV1beta1().
+			clusterCRD, err = clientset.ApiextensionsV1().
 				CustomResourceDefinitions().Get(context.TODO(), crd.ObjectMeta.Name, metav1.GetOptions{})
 
 			if err != nil {
@@ -541,7 +558,7 @@ func createUpdateCRD(clientset apiextensionsclient.Interface, CRDName string, cr
 				scopedLog.Debug("CRD validation is different, updating it...")
 				clusterCRD.ObjectMeta.Labels = crd.ObjectMeta.Labels
 				clusterCRD.Spec = crd.Spec
-				_, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Update(context.TODO(), clusterCRD, metav1.UpdateOptions{})
+				_, err = clientset.ApiextensionsV1().CustomResourceDefinitions().Update(context.TODO(), clusterCRD, metav1.UpdateOptions{})
 				if err == nil {
 					return true, nil
 				}
@@ -562,25 +579,25 @@ func createUpdateCRD(clientset apiextensionsclient.Interface, CRDName string, cr
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
 		for _, cond := range clusterCRD.Status.Conditions {
 			switch cond.Type {
-			case apiextensionsv1beta1.Established:
-				if cond.Status == apiextensionsv1beta1.ConditionTrue {
+			case apiextensionsv1.Established:
+				if cond.Status == apiextensionsv1.ConditionTrue {
 					return true, err
 				}
-			case apiextensionsv1beta1.NamesAccepted:
-				if cond.Status == apiextensionsv1beta1.ConditionFalse {
+			case apiextensionsv1.NamesAccepted:
+				if cond.Status == apiextensionsv1.ConditionFalse {
 					scopedLog.WithError(goerrors.New(cond.Reason)).Error("Name conflict for CRD")
 					return false, err
 				}
 			}
 		}
-		clusterCRD, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(context.TODO(), crd.ObjectMeta.Name, metav1.GetOptions{})
+		clusterCRD, err = clientset.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), crd.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 		return false, err
 	})
 	if err != nil {
-		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(context.TODO(), crd.ObjectMeta.Name, metav1.DeleteOptions{})
+		deleteErr := clientset.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), crd.ObjectMeta.Name, metav1.DeleteOptions{})
 		if deleteErr != nil {
 			return fmt.Errorf("unable to delete k8s %s CRD %s. Deleting CRD due: %s", CRDName, deleteErr, err)
 		}
@@ -591,9 +608,9 @@ func createUpdateCRD(clientset apiextensionsclient.Interface, CRDName string, cr
 	return nil
 }
 
-func needsUpdate(clusterCRD *apiextensionsv1beta1.CustomResourceDefinition) bool {
+func needsUpdate(clusterCRD *apiextensionsv1.CustomResourceDefinition) bool {
 
-	if clusterCRD.Spec.Validation == nil {
+	if clusterCRD.Spec.Versions[0].Schema == nil {
 		// no validation detected
 		return true
 	}
@@ -626,47 +643,24 @@ var (
 	// cepCRV is a minimal validation for CEP objects. Since only the agent is
 	// creating them, it is better to be permissive and have some data, if buggy,
 	// than to have no data in k8s.
-	cepCRV = apiextensionsv1beta1.CustomResourceValidation{
-		OpenAPIV3Schema: &apiextensionsv1beta1.JSONSchemaProps{},
+	cepCRV = apiextensionsv1.CustomResourceValidation{
+		OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{},
 	}
 
-	CNPCRV = apiextensionsv1beta1.CustomResourceValidation{
-		OpenAPIV3Schema: &apiextensionsv1beta1.JSONSchemaProps{
-			// TODO: remove the following comment when we add checker
-			// to detect if we should install the CNP validation for k8s > 1.11
-			// with this line uncommented.
-			Type:       "object",
-			Properties: properties,
+	cnpCRV = apiextensionsv1.CustomResourceValidation{
+		OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{
+			Type: "object",
+			Properties: map[string]apiextensionsv1.JSONSchemaProps{
+				"spec":  spec,
+				"specs": specs,
+			},
 		},
 	}
 
-	properties = map[string]apiextensionsv1beta1.JSONSchemaProps{
-		"CIDR":                     CIDR,
-		"CIDRRule":                 CIDRRule,
-		"EgressRule":               EgressRule,
-		"EndpointSelector":         EndpointSelector,
-		"IngressRule":              IngressRule,
-		"K8sServiceNamespace":      K8sServiceNamespace,
-		"L7Rules":                  L7Rules,
-		"Label":                    Label,
-		"LabelSelector":            LabelSelector,
-		"LabelSelectorRequirement": LabelSelectorRequirement,
-		"PortProtocol":             PortProtocol,
-		"PortRule":                 PortRule,
-		"PortRuleHTTP":             PortRuleHTTP,
-		"PortRuleKafka":            PortRuleKafka,
-		"PortRuleL7":               PortRuleL7,
-		"Rule":                     Rule,
-		"Service":                  Service,
-		"ServiceSelector":          ServiceSelector,
-		"spec":                     spec,
-		"specs":                    specs,
-	}
-
-	CIDR = apiextensionsv1beta1.JSONSchemaProps{
+	CIDR = apiextensionsv1.JSONSchemaProps{
 		Description: "CIDR is a CIDR prefix / IP Block.",
 		Type:        "string",
-		OneOf: []apiextensionsv1beta1.JSONSchemaProps{
+		OneOf: []apiextensionsv1.JSONSchemaProps{
 			{
 				// IPv4 CIDR
 				Pattern: `^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4]` +
@@ -687,7 +681,7 @@ var (
 		},
 	}
 
-	CIDRRule = apiextensionsv1beta1.JSONSchemaProps{
+	CIDRRule = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "CIDRRule is a rule that specifies a CIDR prefix to/from which outside " +
 			"communication is allowed, along with an optional list of subnets within that CIDR " +
@@ -695,7 +689,7 @@ var (
 		Required: []string{
 			"cidr",
 		},
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"cidr": CIDR,
 			"except": {
 				Description: "ExceptCIDRs is a list of IP blocks which the endpoint subject to " +
@@ -704,14 +698,14 @@ var (
 					"Cidr in this CIDRRule, and do not apply to any other CIDR prefixes in any " +
 					"other CIDRRules.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &CIDR,
 				},
 			},
 		},
 	}
 
-	EgressRule = apiextensionsv1beta1.JSONSchemaProps{
+	EgressRule = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "EgressRule contains all rule types which can be applied at egress, i.e. " +
 			"network traffic that originates inside the endpoint and exits the endpoint " +
@@ -721,7 +715,7 @@ var (
 			"will be rejected. In the future, this will be supported and\n  if if multiple " +
 			"members of the structure are specified, then all members\n  must match in order " +
 			"for the rule to take effect.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"toCIDR": {
 				Description: "ToCIDR is a list of IP blocks which the endpoint subject to the " +
 					"rule is allowed to initiate connections. This will match on the " +
@@ -731,7 +725,7 @@ var (
 					"label \"app=database-proxy\" is allowed to initiate connections to " +
 					"10.2.3.0/24",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &CIDR,
 				},
 			},
@@ -747,7 +741,7 @@ var (
 					"is allowed to initiate connections to 10.2.3.0/24 except from IPs in " +
 					"subnet 10.2.3.0/28.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &CIDRRule,
 				},
 			},
@@ -756,8 +750,8 @@ var (
 					"subject to the rule is allowed to initiate connections. Supported " +
 					"entities are `world`, `cluster` and `host`",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type: "string",
 					},
 				},
@@ -768,7 +762,7 @@ var (
 					"to.\n\nExample: Any endpoint with the label \"role=frontend\" is allowed " +
 					"to initiate connections to destination port 8080/tcp",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortRule,
 				},
 			},
@@ -778,7 +772,7 @@ var (
 					"with the label \"app=backend-app\" is allowed to initiate connections to " +
 					"all cidrs backing the \"external-service\" service",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &Service,
 				},
 			},
@@ -789,7 +783,7 @@ var (
 					"\"role=frontend\" can be consumed by any endpoint carrying the label " +
 					"\"role=backend\".",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &EndpointSelector,
 				},
 			},
@@ -802,7 +796,7 @@ var (
 					"requires any endpoint to which it communicates to also carry the label " +
 					"\"team=A\".",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &EndpointSelector,
 				},
 			},
@@ -811,7 +805,7 @@ var (
 				Description: `ToGroups is a list of constraints that will
 				gather data from third-party providers and create a new
 				derived policy.`,
-				Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+				Properties: map[string]apiextensionsv1.JSONSchemaProps{
 					"aws": AWSGroup,
 				},
 			},
@@ -819,43 +813,43 @@ var (
 				Description: `ToFQDNs is a list of rules matching fqdns that endpoint
 				is allowed to communicate with`,
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &FQDNRule,
 				},
 			},
 		},
 	}
 
-	FQDNRule = apiextensionsv1beta1.JSONSchemaProps{
+	FQDNRule = apiextensionsv1.JSONSchemaProps{
 		Type:        "object",
 		Description: `FQDNRule is a rule that specifies an fully qualified domain name to which outside communication is allowed`,
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"matchName":    MatchFQDNName,
 			"matchPattern": MatchFQDNPattern,
 		},
 	}
 
-	MatchFQDNName = apiextensionsv1beta1.JSONSchemaProps{
+	MatchFQDNName = apiextensionsv1.JSONSchemaProps{
 		Description: `MatchName matches fqdn name`,
 		Type:        "string",
 		Pattern:     fqdnNameRegex,
 	}
 
-	MatchFQDNPattern = apiextensionsv1beta1.JSONSchemaProps{
+	MatchFQDNPattern = apiextensionsv1.JSONSchemaProps{
 		Description: `MatchPattern matches fqdn by pattern`,
 		Type:        "string",
 		Pattern:     fqdnPatternRegex,
 	}
 
-	AWSGroup = apiextensionsv1beta1.JSONSchemaProps{
+	AWSGroup = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"securityGroupsIds": {
 				Description: `SecurityGroupsIds is the list of AWS security
 				group IDs that will filter the instances IPs from the AWS API`,
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type: "string",
 					},
 				},
@@ -864,8 +858,8 @@ var (
 				Description: `SecurityGroupsNames is the list of  AWS security
 				group names that will filter the instances IPs from the AWS API`,
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type: "string",
 					},
 				},
@@ -879,7 +873,7 @@ var (
 	}
 	EndpointSelector = *LabelSelector.DeepCopy()
 
-	IngressRule = apiextensionsv1beta1.JSONSchemaProps{
+	IngressRule = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "IngressRule contains all rule types which can be applied at ingress, " +
 			"i.e. network traffic that originates outside of the endpoint and is entering " +
@@ -894,7 +888,7 @@ var (
 			"\n then all members must match in order for the rule to take effect. The\n  " +
 			"exception to this rule is the Requires field, the effects of any Requires\n  " +
 			"field in any rule will apply to all other rules as well.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"fromCIDR": {
 				Description: "FromCIDR is a list of IP blocks which the endpoint subject to " +
 					"the rule is allowed to receive connections from. This will match on the " +
@@ -904,7 +898,7 @@ var (
 					"the label \"app=my-legacy-pet\" is allowed to receive connections from " +
 					"10.3.9.1",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &CIDR,
 				},
 			},
@@ -920,7 +914,7 @@ var (
 					"to receive connections from 10.0.0.0/8 except from IPs in subnet " +
 					"10.96.0.0/12.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &CIDRRule,
 				},
 			},
@@ -931,7 +925,7 @@ var (
 					"\"role=backend\" can be consumed by any endpoint carrying the label " +
 					"\"role=frontend\".",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &EndpointSelector,
 				},
 			},
@@ -940,8 +934,8 @@ var (
 					"subject to the rule is allowed to receive connections from. Supported " +
 					"entities are `world`, `cluster`, `host`, and `init`",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type: "string",
 					},
 				},
@@ -954,7 +948,7 @@ var (
 					"Endpoint with the label \"team=A\" requires consuming endpoint to also " +
 					"carry the label \"team=A\".",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &EndpointSelector,
 				},
 			},
@@ -964,18 +958,18 @@ var (
 					"connections on.\n\nExample: Any endpoint with the label \"app=httpd\" can " +
 					"only accept incoming connections on port 80/tcp.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortRule,
 				},
 			},
 		},
 	}
 
-	K8sServiceNamespace = apiextensionsv1beta1.JSONSchemaProps{
+	K8sServiceNamespace = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "K8sServiceNamespace is an abstraction for the k8s service + namespace " +
 			"types.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"namespace": {
 				Type: "string",
 			},
@@ -985,23 +979,23 @@ var (
 		},
 	}
 
-	L7Rules = apiextensionsv1beta1.JSONSchemaProps{
+	L7Rules = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "L7Rules is a union of port level rule types. Mixing of different port " +
 			"level rule types is disallowed, so exactly one of the following must be set. If " +
 			"none are specified, then no additional port level rules are applied.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"http": {
 				Description: "HTTP specific rules.",
 				Type:        "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortRuleHTTP,
 				},
 			},
 			"kafka": {
 				Description: "Kafka-specific rules.",
 				Type:        "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortRuleKafka,
 				},
 			},
@@ -1012,36 +1006,36 @@ var (
 			"l7": {
 				Description: "Generic Key-Value pair rules.",
 				Type:        "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortRuleL7,
 				},
 			},
 			"dns": {
 				Description: "DNS specific rules",
 				Type:        "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortRuleDNS,
 				},
 			},
 		},
 	}
 
-	PortRuleDNS = apiextensionsv1beta1.JSONSchemaProps{
+	PortRuleDNS = apiextensionsv1.JSONSchemaProps{
 		Type:        "object",
 		Description: `FQDNRule is a rule that specifies an fully qualified domain name to which outside communication is allowed`,
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"matchName":    MatchFQDNName,
 			"matchPattern": MatchFQDNPattern,
 		},
 	}
 
-	Label = apiextensionsv1beta1.JSONSchemaProps{
+	Label = apiextensionsv1.JSONSchemaProps{
 		Type:        "object",
 		Description: "Label is the cilium's representation of a container label.",
 		Required: []string{
 			"key",
 		},
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"key": {
 				Type: "string",
 			},
@@ -1056,12 +1050,12 @@ var (
 		},
 	}
 
-	LabelSelector = apiextensionsv1beta1.JSONSchemaProps{
+	LabelSelector = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "A label selector is a label query over a set of resources. The result " +
 			"of matchLabels and matchExpressions are ANDed. An empty label selector matches " +
 			"all objects. A null label selector matches no objects.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"matchLabels": {
 				Description: "matchLabels is a map of {key,value} pairs. A single {key,value} " +
 					"in the matchLabels map is equivalent to an element of matchExpressions, " +
@@ -1073,18 +1067,18 @@ var (
 				Description: "matchExpressions is a list of label selector requirements. " +
 					"The requirements are ANDed.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &LabelSelectorRequirement,
 				},
 			},
 		},
 	}
 
-	LabelSelectorRequirement = apiextensionsv1beta1.JSONSchemaProps{
+	LabelSelectorRequirement = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "A label selector requirement is a selector that contains values, a key, " +
 			"and an operator that relates the key and values.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"key": {
 				Description: "key is the label key that the selector applies to.",
 				Type:        "string",
@@ -1093,7 +1087,7 @@ var (
 				Description: "operator represents a key's relationship to a set of values. " +
 					"Valid operators are In, NotIn, Exists and DoesNotExist.",
 				Type: "string",
-				Enum: []apiextensionsv1beta1.JSON{
+				Enum: []apiextensionsv1.JSON{
 					{
 						Raw: []byte(`"In"`),
 					},
@@ -1114,8 +1108,8 @@ var (
 					"DoesNotExist, the values array must be empty. This array is replaced " +
 					"during a strategic merge patch.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type: "string",
 					},
 				},
@@ -1124,13 +1118,13 @@ var (
 		Required: []string{"key", "operator"},
 	}
 
-	PortProtocol = apiextensionsv1beta1.JSONSchemaProps{
+	PortProtocol = apiextensionsv1.JSONSchemaProps{
 		Type:        "object",
 		Description: "PortProtocol specifies an L4 port with an optional transport protocol",
 		Required: []string{
 			"port",
 		},
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"port": {
 				Description: "Port is an L4 port number or a port name. For now the string will be strictly " +
 					"parsed as a single uint16 or a valid port name, which consists of at most 15 alphanumeric " +
@@ -1148,7 +1142,7 @@ var (
 					`matches. Accepted values: "TCP", "UDP", ""/"ANY"\n\nMatching on ` +
 					`ICMP is not supported.`,
 				Type: "string",
-				Enum: []apiextensionsv1beta1.JSON{
+				Enum: []apiextensionsv1.JSON{
 					{
 						Raw: []byte(`"TCP"`),
 					},
@@ -1163,7 +1157,7 @@ var (
 		},
 	}
 
-	Secret = map[string]apiextensionsv1beta1.JSONSchemaProps{
+	Secret = map[string]apiextensionsv1.JSONSchemaProps{
 		"namespace": {
 			Description: "Namespace is the namespace in which the secret exists. If " +
 				"namespace is omitted, the namespace of the enclosing rule is assumed, " +
@@ -1176,7 +1170,7 @@ var (
 		},
 	}
 
-	TLSContext = map[string]apiextensionsv1beta1.JSONSchemaProps{
+	TLSContext = map[string]apiextensionsv1.JSONSchemaProps{
 		"secret": {
 			Description: "Secret contains the certificates and private key for the TLS context.",
 			Type:        "object",
@@ -1207,15 +1201,15 @@ var (
 		},
 	}
 
-	PortRule = apiextensionsv1beta1.JSONSchemaProps{
+	PortRule = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "PortRule is a list of ports/protocol combinations with optional Layer 7 " +
 			"rules which must be met.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"ports": {
 				Description: "Ports is a list of L4 port/protocol.",
 				Type:        "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &PortProtocol,
 				},
 			},
@@ -1249,13 +1243,13 @@ var (
 		},
 	}
 
-	HeaderMatch = map[string]apiextensionsv1beta1.JSONSchemaProps{
+	HeaderMatch = map[string]apiextensionsv1.JSONSchemaProps{
 		"mismatch": {
 			Description: "Mismatch identifies what to do in case there is no match. The " +
 				"default is to drop the request. Otherwise the overall rule is still " +
 				"considered as matching, but the mismatches are logged in the access log.",
 			Type: "string",
-			Enum: []apiextensionsv1beta1.JSON{
+			Enum: []apiextensionsv1.JSON{
 				{
 					Raw: []byte(`"LOG"`),
 				},
@@ -1291,7 +1285,7 @@ var (
 		},
 	}
 
-	PortRuleHTTP = apiextensionsv1beta1.JSONSchemaProps{
+	PortRuleHTTP = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "PortRuleHTTP is a list of HTTP protocol constraints. All fields are " +
 			"optional, if all fields are empty or missing, the rule does not have any effect." +
@@ -1300,14 +1294,14 @@ var (
 			"matched against the path of an incoming request. Currently it can contain " +
 			"characters disallowed from the conventional \"path\" part of a URL as defined by " +
 			"RFC 3986.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"headerMatches": {
 				Description: "HeaderMatches is a list of HTTP headers which must be present and match " +
 					"against the given or referenced values or expressions. If omitted or empty, " +
 					"requests are allowed regardless of headers present.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type:       "object",
 						Properties: HeaderMatch,
 						Required: []string{
@@ -1321,8 +1315,8 @@ var (
 					"request. If omitted or empty, requests are allowed regardless of headers " +
 					"present.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
-					Schema: &apiextensionsv1beta1.JSONSchemaProps{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
+					Schema: &apiextensionsv1.JSONSchemaProps{
 						Type: "string",
 					},
 				},
@@ -1350,12 +1344,12 @@ var (
 		},
 	}
 
-	PortRuleKafka = apiextensionsv1beta1.JSONSchemaProps{
+	PortRuleKafka = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "PortRuleKafka is a list of Kafka protocol constraints. All fields are " +
 			"optional, if all fields are empty or missing, the rule will match all Kafka " +
 			"messages.",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"role": {
 				Description: "Role is a case-insensitive string and describes a group of API keys" +
 					"necessary to perform certain higher level Kafka operations such as" +
@@ -1368,7 +1362,7 @@ var (
 					"may be specified. If omitted or empty, the field has no effect and the " +
 					"logic of the APIKey field applies.",
 				Type: "string",
-				Enum: []apiextensionsv1beta1.JSON{
+				Enum: []apiextensionsv1.JSON{
 					{
 						Raw: []byte(`"produce"`),
 					},
@@ -1418,7 +1412,7 @@ var (
 		},
 	}
 
-	PortRuleL7 = apiextensionsv1beta1.JSONSchemaProps{
+	PortRuleL7 = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "PortRuleL7 is a map of {key,value} pairs which is passed to the " +
 			"parser referenced in l7proto. It is up to the parser to define what to " +
@@ -1432,14 +1426,14 @@ var (
 		// Keep this here so that we can re-introduce this when th minimum suppoerted k8s version
 		// is 1.11.
 		//
-		//AdditionalProperties: &apiextensionsv1beta1.JSONSchemaPropsOrBool{
-		//	Schema: &apiextensionsv1beta1.JSONSchemaProps{
+		//AdditionalProperties: &apiextensionsv1.JSONSchemaPropsOrBool{
+		//	Schema: &apiextensionsv1.JSONSchemaProps{
 		//		Type: "string",
 		//	},
 		//},
 	}
 
-	Rule = apiextensionsv1beta1.JSONSchemaProps{
+	Rule = apiextensionsv1.JSONSchemaProps{
 		Type: "object",
 		Description: "Rule is a policy rule which must be applied to all endpoints which match " +
 			"the labels contained in the endpointSelector\n\nEach rule is split into an " +
@@ -1452,7 +1446,7 @@ var (
 		Required: []string{
 			"endpointSelector",
 		},
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"Description": {
 				Description: "Description is a free form string, it can be used by the creator " +
 					"of the rule to store human readable explanation of the purpose of this " +
@@ -1463,7 +1457,7 @@ var (
 				Description: "Egress is a list of EgressRule which are enforced at egress. If " +
 					"omitted or empty, this rule does not apply at egress.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &EgressRule,
 				},
 			},
@@ -1472,7 +1466,7 @@ var (
 				Description: "Ingress is a list of IngressRule which are enforced at ingress. " +
 					"If omitted or empty, this rule does not apply at ingress.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &IngressRule,
 				},
 			},
@@ -1482,29 +1476,29 @@ var (
 					"delete strings based on labels. Labels are not required to be unique, " +
 					"multiple rules can have overlapping or identical labels.",
 				Type: "array",
-				Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+				Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 					Schema: &Label,
 				},
 			},
 		},
 	}
 
-	Service = apiextensionsv1beta1.JSONSchemaProps{
+	Service = apiextensionsv1.JSONSchemaProps{
 		Type:        "object",
 		Description: "Service wraps around selectors for services",
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"k8sService":         K8sServiceNamespace,
 			"k8sServiceSelector": ServiceSelector,
 		},
 	}
 
-	ServiceSelector = apiextensionsv1beta1.JSONSchemaProps{
+	ServiceSelector = apiextensionsv1.JSONSchemaProps{
 		Type:        "object",
 		Description: "ServiceSelector is a label selector for k8s services",
 		Required: []string{
 			"selector",
 		},
-		Properties: map[string]apiextensionsv1beta1.JSONSchemaProps{
+		Properties: map[string]apiextensionsv1.JSONSchemaProps{
 			"selector": EndpointSelector,
 			"namespace": {
 				Type: "string",
@@ -1514,10 +1508,10 @@ var (
 
 	spec = *Rule.DeepCopy()
 
-	specs = apiextensionsv1beta1.JSONSchemaProps{
+	specs = apiextensionsv1.JSONSchemaProps{
 		Description: "Specs is a list of desired Cilium specific rule specification.",
 		Type:        "array",
-		Items: &apiextensionsv1beta1.JSONSchemaPropsOrArray{
+		Items: &apiextensionsv1.JSONSchemaPropsOrArray{
 			Schema: &spec,
 		},
 	}
