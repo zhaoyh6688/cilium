@@ -52,7 +52,7 @@ require (
 	github.com/mitchellh/protoc-gen-go-json v0.0.0-20200113165135-fd297ce346f1
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.7.0
+	github.com/onsi/gomega v1.8.1
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/optiopay/kafka v0.0.0-00010101000000-000000000000
@@ -91,6 +91,7 @@ require (
 	k8s.io/client-go v0.18.2
 	k8s.io/code-generator v0.18.2
 	k8s.io/klog v1.0.0
+	sigs.k8s.io/controller-tools v0.0.0-00010101000000-000000000000
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -98,4 +99,6 @@ replace (
 	github.com/miekg/dns => github.com/cilium/dns v1.1.4-0.20190417235132-8e25ec9a0ff3
 	github.com/optiopay/kafka => github.com/cilium/kafka v0.0.0-20180809090225-01ce283b732b
 	k8s.io/client-go => github.com/cilium/client-go v0.0.0-20200417200322-b77c886899ef
+	// Temporarly pinned to this version until github.com/kubernetes-sigs/controller-tools/pull/428 is merged
+	sigs.k8s.io/controller-tools => github.com/skaslev/controller-tools v0.2.9-0.20200507085414-99be5b1a6a73
 )
