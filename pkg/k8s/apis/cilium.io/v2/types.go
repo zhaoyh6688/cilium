@@ -50,6 +50,9 @@ var (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:singular="ciliumnetworkpolicy",path="ciliumnetworkpolicies",scope="Namespaced",shortName={cnp,ciliumnp}
+// +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type=date
+// +kubebuilder:subresource:status
 
 // CiliumNetworkPolicy is a Kubernetes third-party resource with an extended version
 // of NetworkPolicy
@@ -69,8 +72,6 @@ type CiliumNetworkPolicy struct {
 	Specs api.Rules `json:"specs,omitempty"`
 
 	// Status is the status of the Cilium policy rule
-	//
-	// +kubebuilder:validation:Optional
 	Status CiliumNetworkPolicyStatus `json:"status"`
 }
 
@@ -104,7 +105,9 @@ func (in *CiliumNetworkPolicy) DeepEqual(other *CiliumNetworkPolicy) bool {
 		in.deepEqual(other)
 }
 
-// CiliumNetworkPolicyStatus is the status of a Cilium policy rule
+// +kubebuilder:validation:Optional
+
+// CiliumNetworkPolicyStatus is the status of a Cilium policy rule.
 // +deepequal-gen=true
 type CiliumNetworkPolicyStatus struct {
 	// Nodes is the Cilium policy status for each node

@@ -8,13 +8,22 @@ metadata:
   creationTimestamp: null
   name: ciliumnetworkpolicies.cilium.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
   group: cilium.io
   names:
     kind: CiliumNetworkPolicy
     listKind: CiliumNetworkPolicyList
     plural: ciliumnetworkpolicies
+    shortNames:
+    - cnp
+    - ciliumnp
     singular: ciliumnetworkpolicy
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: CiliumNetworkPolicy is a Kubernetes third-party resource with an
@@ -2876,8 +2885,6 @@ spec:
               description: Nodes is the Cilium policy status for each node
               type: object
           type: object
-      required:
-      - metadata
       type: object
   version: v2
   versions:

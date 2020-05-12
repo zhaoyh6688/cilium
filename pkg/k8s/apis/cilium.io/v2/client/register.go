@@ -115,22 +115,6 @@ func CreateCustomResourceDefinitions(clientset apiextensionsclient.Interface) er
 // createCNPCRD creates and updates the CiliumNetworkPolicies CRD. It should be called
 // on agent startup but is idempotent and safe to call again.
 func createCNPCRD(clientset apiextensionsclient.Interface) error {
-	var (
-		// CustomResourceDefinitionSingularName is the singular name of custom resource definition
-		CustomResourceDefinitionSingularName = "ciliumnetworkpolicy"
-
-		// CustomResourceDefinitionPluralName is the plural name of custom resource definition
-		CustomResourceDefinitionPluralName = "ciliumnetworkpolicies"
-
-		// CustomResourceDefinitionShortNames are the abbreviated names to refer to this CRD's instances
-		CustomResourceDefinitionShortNames = []string{"cnp", "ciliumnp"}
-
-		// CustomResourceDefinitionKind is the Kind name of custom resource definition
-		CustomResourceDefinitionKind = CNPKindDefinition
-
-		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
-	)
-
 	crdBytes, err := examplesCrdsCiliumnetworkpoliciesYamlBytes()
 	if err != nil {
 		panic(err)
@@ -143,7 +127,7 @@ func createCNPCRD(clientset apiextensionsclient.Interface) error {
 
 	res := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: CRDName,
+			Name: ciliumCRD.Spec.Names.Plural + "." + SchemeGroupVersion.Group,
 			Labels: map[string]string{
 				CustomResourceDefinitionSchemaVersionKey: CustomResourceDefinitionSchemaVersion,
 			},
@@ -152,16 +136,15 @@ func createCNPCRD(clientset apiextensionsclient.Interface) error {
 			Group:   SchemeGroupVersion.Group,
 			Version: SchemeGroupVersion.Version,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     CustomResourceDefinitionPluralName,
-				Singular:   CustomResourceDefinitionSingularName,
-				ShortNames: CustomResourceDefinitionShortNames,
-				Kind:       CustomResourceDefinitionKind,
+				Plural:     ciliumCRD.Spec.Names.Plural,
+				Singular:   ciliumCRD.Spec.Names.Singular,
+				ShortNames: ciliumCRD.Spec.Names.ShortNames,
+				Kind:       ciliumCRD.Spec.Names.Kind,
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
-			},
-			Scope:      apiextensionsv1beta1.NamespaceScoped,
-			Validation: ciliumCRD.Spec.Validation,
+			AdditionalPrinterColumns: ciliumCRD.Spec.AdditionalPrinterColumns,
+			Subresources:             ciliumCRD.Spec.Subresources,
+			Scope:                    ciliumCRD.Spec.Scope,
+			Validation:               ciliumCRD.Spec.Validation,
 		},
 	}
 
