@@ -8,13 +8,51 @@ metadata:
   creationTimestamp: null
   name: ciliumendpoints.cilium.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.id
+    description: Cilium endpoint id
+    name: Endpoint ID
+    type: integer
+  - JSONPath: .status.identity.id
+    description: Cilium identity id
+    name: Identity ID
+    type: integer
+  - JSONPath: .status.policy.ingress.enforcing
+    description: Ingress enforcement in the endpoint
+    name: Ingress Enforcement
+    type: boolean
+  - JSONPath: .status.policy.egress.enforcing
+    description: Egress enforcement in the endpoint
+    name: Egress Enforcement
+    type: boolean
+  - JSONPath: .status.visibility-policy-status
+    description: Status of visibility policy in the endpoint
+    name: Visibility Policy
+    type: string
+  - JSONPath: .status.state
+    description: Endpoint current state
+    name: Endpoint State
+    type: string
+  - JSONPath: .status.networking.addressing[0].ipv4
+    description: Endpoint IPv4 address
+    name: IPv4
+    type: string
+  - JSONPath: .status.networking.addressing[0].ipv6
+    description: Endpoint IPv6 address
+    name: IPv6
+    type: string
   group: cilium.io
   names:
     kind: CiliumEndpoint
     listKind: CiliumEndpointList
     plural: ciliumendpoints
+    shortNames:
+    - cep
+    - ciliumep
     singular: ciliumendpoint
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       description: CiliumEndpoint is a CRD that represents an endpoint managed by
@@ -211,8 +249,6 @@ spec:
                   description: NodeIP is the IP of the node the endpoint is running
                     on. The IP must be reachable between nodes.
                   type: string
-              required:
-              - addressing
               type: object
             policy:
               description: EndpointPolicy represents the endpoint's policy by listing
@@ -282,8 +318,6 @@ spec:
                             type: integer
                         type: object
                       type: array
-                  required:
-                  - enforcing
                   type: object
                 ingress:
                   description: EndpointPolicyDirection is the list of allowed identities
@@ -348,8 +382,6 @@ spec:
                             type: integer
                         type: object
                       type: array
-                  required:
-                  - enforcing
                   type: object
               type: object
             state:
@@ -360,9 +392,6 @@ spec:
             visibility-policy-status:
               type: string
           type: object
-      required:
-      - metadata
-      - status
       type: object
   version: v2
   versions:

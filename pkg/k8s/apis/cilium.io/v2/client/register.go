@@ -217,90 +217,37 @@ func createCCNPCRD(clientset apiextensionsclient.Interface) error {
 // createCEPCRD creates and updates the CiliumEndpoint CRD. It should be called
 // on agent startup but is idempotent and safe to call again.
 func createCEPCRD(clientset apiextensionsclient.Interface) error {
-	var (
-		// CustomResourceDefinitionSingularName is the singular name of custom resource definition
-		CustomResourceDefinitionSingularName = "ciliumendpoint"
-
-		// CustomResourceDefinitionPluralName is the plural name of custom resource definition
-		CustomResourceDefinitionPluralName = "ciliumendpoints"
-
-		// CustomResourceDefinitionShortNames are the abbreviated names to refer to this CRD's instances
-		CustomResourceDefinitionShortNames = []string{"cep", "ciliumep"}
-
-		// CustomResourceDefinitionKind is the Kind name of custom resource definition
-		CustomResourceDefinitionKind = "CiliumEndpoint"
-
-		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
-	)
+	crdBytes, err := examplesCrdsCiliumendpointsYamlBytes()
+	if err != nil {
+		panic(err)
+	}
+	ciliumCRD := apiextensionsv1beta1.CustomResourceDefinition{}
+	err = yaml.Unmarshal(crdBytes, &ciliumCRD)
+	if err != nil {
+		panic(err)
+	}
 
 	res := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: CRDName,
+			Name: ciliumCRD.Spec.Names.Plural + "." + SchemeGroupVersion.Group,
+			// TODO(christarazi): Remove me because this is just a workaround
+			Labels: map[string]string{
+				CustomResourceDefinitionSchemaVersionKey: CustomResourceDefinitionSchemaVersion,
+			},
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 			Group:   SchemeGroupVersion.Group,
 			Version: SchemeGroupVersion.Version,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     CustomResourceDefinitionPluralName,
-				Singular:   CustomResourceDefinitionSingularName,
-				ShortNames: CustomResourceDefinitionShortNames,
-				Kind:       CustomResourceDefinitionKind,
+				Plural:     ciliumCRD.Spec.Names.Plural,
+				Singular:   ciliumCRD.Spec.Names.Singular,
+				ShortNames: ciliumCRD.Spec.Names.ShortNames,
+				Kind:       ciliumCRD.Spec.Names.Kind,
 			},
-			AdditionalPrinterColumns: []apiextensionsv1beta1.CustomResourceColumnDefinition{
-				{
-					Name:        "Endpoint ID",
-					Type:        "integer",
-					Description: "Cilium endpoint id",
-					JSONPath:    ".status.id",
-				},
-				{
-					Name:        "Identity ID",
-					Type:        "integer",
-					Description: "Cilium identity id",
-					JSONPath:    ".status.identity.id",
-				},
-				{
-					Name:        "Ingress Enforcement",
-					Type:        "boolean",
-					Description: "Ingress enforcement in the endpoint",
-					JSONPath:    ".status.policy.ingress.enforcing",
-				},
-				{
-					Name:        "Egress Enforcement",
-					Type:        "boolean",
-					Description: "Egress enforcement in the endpoint",
-					JSONPath:    ".status.policy.egress.enforcing",
-				},
-				{
-					Name:        "Visibility Policy",
-					Type:        "string",
-					Description: "Status of visibility policy in the endpoint",
-					JSONPath:    ".status.visibility-policy-status",
-				},
-				{
-					Name:        "Endpoint State",
-					Type:        "string",
-					Description: "Endpoint current state",
-					JSONPath:    ".status.state",
-				},
-				{
-					Name:        "IPv4",
-					Type:        "string",
-					Description: "Endpoint IPv4 address",
-					JSONPath:    ".status.networking.addressing[0].ipv4",
-				},
-				{
-					Name:        "IPv6",
-					Type:        "string",
-					Description: "Endpoint IPv6 address",
-					JSONPath:    ".status.networking.addressing[0].ipv6",
-				},
-			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
-			},
-			Scope:      apiextensionsv1beta1.NamespaceScoped,
-			Validation: &cepCRV,
+			AdditionalPrinterColumns: ciliumCRD.Spec.AdditionalPrinterColumns,
+			Subresources:             ciliumCRD.Spec.Subresources,
+			Scope:                    ciliumCRD.Spec.Scope,
+			Validation:               ciliumCRD.Spec.Validation,
 		},
 	}
 

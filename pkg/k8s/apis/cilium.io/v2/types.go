@@ -364,13 +364,21 @@ type CiliumClusterwideNetworkPolicyList struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=false
+// +kubebuilder:resource:singular="ciliumendpoint",path="ciliumendpoints",scope="Namespaced",shortName={cep,ciliumep}
+// +kubebuilder:printcolumn:JSONPath=".status.id",description="Cilium endpoint id",name="Endpoint ID",type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.identity.id",description="Cilium identity id",name="Identity ID",type=integer
+// +kubebuilder:printcolumn:JSONPath=".status.policy.ingress.enforcing",description="Ingress enforcement in the endpoint",name="Ingress Enforcement",type=boolean
+// +kubebuilder:printcolumn:JSONPath=".status.policy.egress.enforcing",description="Egress enforcement in the endpoint",name="Egress Enforcement",type=boolean
+// +kubebuilder:printcolumn:JSONPath=".status.visibility-policy-status",description="Status of visibility policy in the endpoint",name="Visibility Policy",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.state",description="Endpoint current state",name="Endpoint State",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.networking.addressing[0].ipv4",description="Endpoint IPv4 address",name="IPv4",type=string
+// +kubebuilder:printcolumn:JSONPath=".status.networking.addressing[0].ipv6",description="Endpoint IPv6 address",name="IPv6",type=string
+// +kubebuilder:subresource:status
 
 // CiliumEndpoint is a CRD that represents an endpoint managed by Cilium.
 type CiliumEndpoint struct {
-	// +k8s:openapi-gen=false
 	// +deepequal-gen=false
 	metav1.TypeMeta `json:",inline"`
-	// +k8s:openapi-gen=false
 	// +deepequal-gen=false
 	metav1.ObjectMeta `json:"metadata"`
 
@@ -382,6 +390,7 @@ type CiliumEndpoint struct {
 // deepcopy for EndpointStatus but not for the various models.* types it
 // includes. We can't generate functions for classes in other packages, nor can
 // we change the models.Endpoint type to use proxy types we define here.
+//
 // +k8s:deepcopy-gen=false
 type EndpointStatus struct {
 	// The cilium-agent-local ID of the endpoint
