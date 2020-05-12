@@ -71,17 +71,13 @@ spec:
         metadata:
           type: object
         status:
-          description: EndpointStatus is the status of a Cilium endpoint The custom
-            deepcopy function below is a workaround. We can generate a deepcopy for
-            EndpointStatus but not for the various models.* types it includes. We
-            can't generate functions for classes in other packages, nor can we change
-            the models.Endpoint type to use proxy types we define here.
+          description: EndpointStatus is the status of a Cilium endpoint.
           properties:
             controllers:
               description: Controllers is the list of failing controllers for this
                 endpoint
               items:
-                description: ControllerStatus is the status of a failing controller
+                description: ControllerStatus is the status of a failing controller.
                 properties:
                   configuration:
                     description: Configuration is the controller configuration
@@ -237,7 +233,7 @@ spec:
                 addressing:
                   description: IP4/6 addresses assigned to this Endpoint
                   items:
-                    description: AddressPair is is a par of IPv4 and/or IPv6 address
+                    description: AddressPair is is a par of IPv4 and/or IPv6 address.
                     properties:
                       ipv4:
                         type: string
@@ -253,17 +249,17 @@ spec:
             policy:
               description: EndpointPolicy represents the endpoint's policy by listing
                 all allowed ingress and egress identities in combination with L4 port
-                and protocol
+                and protocol.
               properties:
                 egress:
                   description: EndpointPolicyDirection is the list of allowed identities
-                    per direction
+                    per direction.
                   properties:
                     adding:
-                      description: AllowedIdentityList is a list of AllowedIdentityTuple
+                      description: AllowedIdentityList is a list of AllowedIdentityTuple.
                       items:
                         description: AllowedIdentityTuple specifies an allowed peer
-                          by identity, destination port and protocol
+                          by identity, destination port and protocol.
                         properties:
                           dest-port:
                             type: integer
@@ -279,10 +275,10 @@ spec:
                         type: object
                       type: array
                     allowed:
-                      description: AllowedIdentityList is a list of AllowedIdentityTuple
+                      description: AllowedIdentityList is a list of AllowedIdentityTuple.
                       items:
                         description: AllowedIdentityTuple specifies an allowed peer
-                          by identity, destination port and protocol
+                          by identity, destination port and protocol.
                         properties:
                           dest-port:
                             type: integer
@@ -300,10 +296,10 @@ spec:
                     enforcing:
                       type: boolean
                     removing:
-                      description: AllowedIdentityList is a list of AllowedIdentityTuple
+                      description: AllowedIdentityList is a list of AllowedIdentityTuple.
                       items:
                         description: AllowedIdentityTuple specifies an allowed peer
-                          by identity, destination port and protocol
+                          by identity, destination port and protocol.
                         properties:
                           dest-port:
                             type: integer
@@ -321,13 +317,13 @@ spec:
                   type: object
                 ingress:
                   description: EndpointPolicyDirection is the list of allowed identities
-                    per direction
+                    per direction.
                   properties:
                     adding:
-                      description: AllowedIdentityList is a list of AllowedIdentityTuple
+                      description: AllowedIdentityList is a list of AllowedIdentityTuple.
                       items:
                         description: AllowedIdentityTuple specifies an allowed peer
-                          by identity, destination port and protocol
+                          by identity, destination port and protocol.
                         properties:
                           dest-port:
                             type: integer
@@ -343,10 +339,10 @@ spec:
                         type: object
                       type: array
                     allowed:
-                      description: AllowedIdentityList is a list of AllowedIdentityTuple
+                      description: AllowedIdentityList is a list of AllowedIdentityTuple.
                       items:
                         description: AllowedIdentityTuple specifies an allowed peer
-                          by identity, destination port and protocol
+                          by identity, destination port and protocol.
                         properties:
                           dest-port:
                             type: integer
@@ -364,10 +360,10 @@ spec:
                     enforcing:
                       type: boolean
                     removing:
-                      description: AllowedIdentityList is a list of AllowedIdentityTuple
+                      description: AllowedIdentityList is a list of AllowedIdentityTuple.
                       items:
                         description: AllowedIdentityTuple specifies an allowed peer
-                          by identity, destination port and protocol
+                          by identity, destination port and protocol.
                         properties:
                           dest-port:
                             type: integer

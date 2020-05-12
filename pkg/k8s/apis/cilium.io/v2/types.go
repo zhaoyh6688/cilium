@@ -54,8 +54,8 @@ var (
 // +kubebuilder:printcolumn:JSONPath=".metadata.creationTimestamp",name="Age",type=date
 // +kubebuilder:subresource:status
 
-// CiliumNetworkPolicy is a Kubernetes third-party resource with an extended version
-// of NetworkPolicy
+// CiliumNetworkPolicy is a Kubernetes third-party resource with an extended
+// version of NetworkPolicy.
 // +deepequal-gen:private-method=true
 type CiliumNetworkPolicy struct {
 	// +k8s:openapi-gen=false
@@ -119,7 +119,7 @@ type CiliumNetworkPolicyStatus struct {
 }
 
 // CiliumNetworkPolicyNodeStatus is the status of a Cilium policy rule for a
-// specific node
+// specific node.
 // +deepequal-gen=true
 type CiliumNetworkPolicyNodeStatus struct {
 	// OK is true when the policy has been parsed and imported successfully
@@ -152,7 +152,7 @@ type CiliumNetworkPolicyNodeStatus struct {
 }
 
 // CreateCNPNodeStatus returns a CiliumNetworkPolicyNodeStatus created from the
-// provided fields
+// provided fields.
 func CreateCNPNodeStatus(enforcing, ok bool, cnpError error, rev uint64, annotations map[string]string) CiliumNetworkPolicyNodeStatus {
 	cnpns := CiliumNetworkPolicyNodeStatus{
 		Enforcing:   enforcing,
@@ -321,9 +321,9 @@ func (r *CiliumNetworkPolicy) RequiresDerivative() bool {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// CiliumNetworkPolicyList is a list of CiliumNetworkPolicy objects
 // +k8s:openapi-gen=false
+
+// CiliumNetworkPolicyList is a list of CiliumNetworkPolicy objects.
 // +deepequal-gen=false
 type CiliumNetworkPolicyList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -339,8 +339,9 @@ type CiliumNetworkPolicyList struct {
 // +kubebuilder:resource:singular="ciliumclusterwidenetworkpolicy",path="ciliumclusterwidenetworkpolicies",scope="Cluster",shortName={ccnp}
 // +kubebuilder:subresource:status
 
-// CiliumClusterwideNetworkPolicy is a Kubernetes third-party resource with an modified version
-// of CiliumNetworkPolicy which is cluster scoped rather than namespace scoped.
+// CiliumClusterwideNetworkPolicy is a Kubernetes third-party resource with an
+// modified version of CiliumNetworkPolicy which is cluster scoped rather than
+// namespace scoped.
 // +deepequal-gen=false
 type CiliumClusterwideNetworkPolicy struct {
 	// TODO: The following two fields are required (regardless of embedding
@@ -363,9 +364,10 @@ type CiliumClusterwideNetworkPolicy struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// CiliumClusterwideNetworkPolicyList is a list of CiliumClusterwideNetworkPolicy objects
 // +k8s:openapi-gen=false
+
+// CiliumClusterwideNetworkPolicyList is a list of
+// CiliumClusterwideNetworkPolicy objects.
 // +deepequal-gen=false
 type CiliumClusterwideNetworkPolicyList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -399,13 +401,14 @@ type CiliumEndpoint struct {
 	Status EndpointStatus `json:"status"`
 }
 
-// EndpointStatus is the status of a Cilium endpoint
 // The custom deepcopy function below is a workaround. We can generate a
 // deepcopy for EndpointStatus but not for the various models.* types it
 // includes. We can't generate functions for classes in other packages, nor can
 // we change the models.Endpoint type to use proxy types we define here.
-//
+
 // +k8s:deepcopy-gen=false
+
+// EndpointStatus is the status of a Cilium endpoint.
 type EndpointStatus struct {
 	// The cilium-agent-local ID of the endpoint
 	ID int64 `json:"id,omitempty"`
@@ -457,10 +460,11 @@ type EndpointStatus struct {
 	NamedPorts models.NamedPorts `json:"named-ports,omitempty"`
 }
 
-// EndpointStatusLogEntries is the maximum number of log entries in EndpointStatus.Log
+// EndpointStatusLogEntries is the maximum number of log entries in
+// EndpointStatus.Log.
 const EndpointStatusLogEntries = 5
 
-// ControllerList is a list of ControllerStatus
+// ControllerList is a list of ControllerStatus.
 // +k8s:deepcopy-gen=false
 type ControllerList []ControllerStatus
 
@@ -469,7 +473,7 @@ func (c ControllerList) Sort() {
 	sort.Slice(c, func(i, j int) bool { return c[i].Name < c[j].Name })
 }
 
-// ControllerStatus is the status of a failing controller
+// ControllerStatus is the status of a failing controller.
 // +k8s:deepcopy-gen=false
 type ControllerStatus struct {
 	// Name is the name of the controller
@@ -485,7 +489,7 @@ type ControllerStatus struct {
 	UUID string `json:"uuid,omitempty"`
 }
 
-// ControllerStatusStatus is the detailed status section of a controller
+// ControllerStatusStatus is the detailed status section of a controller.
 // +k8s:deepcopy-gen=false
 type ControllerStatusStatus struct {
 	ConsecutiveFailureCount int64  `json:"consecutive-failure-count,omitempty"`
@@ -497,14 +501,14 @@ type ControllerStatusStatus struct {
 }
 
 // EndpointPolicy represents the endpoint's policy by listing all allowed
-// ingress and egress identities in combination with L4 port and protocol
+// ingress and egress identities in combination with L4 port and protocol.
 // +k8s:deepcopy-gen=false
 type EndpointPolicy struct {
 	Ingress *EndpointPolicyDirection `json:"ingress,omitempty"`
 	Egress  *EndpointPolicyDirection `json:"egress,omitempty"`
 }
 
-// EndpointPolicyDirection is the list of allowed identities per direction
+// EndpointPolicyDirection is the list of allowed identities per direction.
 // +k8s:deepcopy-gen=false
 type EndpointPolicyDirection struct {
 	Enforcing bool                `json:"enforcing"`
@@ -514,7 +518,7 @@ type EndpointPolicyDirection struct {
 }
 
 // AllowedIdentityTuple specifies an allowed peer by identity, destination port
-// and protocol
+// and protocol.
 // +k8s:deepcopy-gen=false
 type AllowedIdentityTuple struct {
 	Identity       uint64            `json:"identity,omitempty"`
@@ -523,7 +527,7 @@ type AllowedIdentityTuple struct {
 	Protocol       uint8             `json:"protocol,omitempty"`
 }
 
-// AllowedIdentityList is a list of AllowedIdentityTuple
+// AllowedIdentityList is a list of AllowedIdentityTuple.
 // +k8s:deepcopy-gen=false
 type AllowedIdentityList []AllowedIdentityTuple
 
@@ -543,7 +547,7 @@ func (a AllowedIdentityList) Sort() {
 	})
 }
 
-// EndpointIdentity is the identity information of an endpoint
+// EndpointIdentity is the identity information of an endpoint.
 type EndpointIdentity struct {
 	// ID is the numeric identity of the endpoint
 	ID int64 `json:"id,omitempty"`
@@ -591,7 +595,7 @@ type CiliumIdentity struct {
 	Status IdentityStatus `json:"status"`
 }
 
-// IdentityStatus is the status of an identity
+// IdentityStatus is the status of an identity.
 //
 // This structure is deprecated, do not use.
 // +deepequal-gen=false
@@ -600,7 +604,7 @@ type IdentityStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-//
+
 // CiliumIdentityList is a list of CiliumIdentity objects
 // +deepequal-gen=false
 type CiliumIdentityList struct {
@@ -611,14 +615,14 @@ type CiliumIdentityList struct {
 	Items []CiliumIdentity `json:"items"`
 }
 
-// AddressPair is is a par of IPv4 and/or IPv6 address
+// AddressPair is is a par of IPv4 and/or IPv6 address.
 // +k8s:deepcopy-gen=false
 type AddressPair struct {
 	IPV4 string `json:"ipv4,omitempty"`
 	IPV6 string `json:"ipv6,omitempty"`
 }
 
-// AddressPairList is a list of address pairs
+// AddressPairList is a list of address pairs.
 // +k8s:deepcopy-gen=false
 type AddressPairList []*AddressPair
 
@@ -634,7 +638,7 @@ func (a AddressPairList) Sort() {
 	})
 }
 
-// EndpointNetworking is the addressing information of an endpoint
+// EndpointNetworking is the addressing information of an endpoint.
 type EndpointNetworking struct {
 	// IP4/6 addresses assigned to this Endpoint
 	Addressing AddressPairList `json:"addressing"`
@@ -679,9 +683,9 @@ func (m *EndpointStatus) UnmarshalBinary(b []byte) error {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:openapi-gen=false
 
 // CiliumEndpointList is a list of CiliumEndpoint objects
-// +k8s:openapi-gen=false
 // +deepequal-gen=false
 type CiliumEndpointList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -698,7 +702,7 @@ type CiliumEndpointList struct {
 
 // CiliumNode represents a node managed by Cilium. It contains a specification
 // to control various node specific configuration aspects and a status section
-// to represent the status of the node
+// to represent the status of the node.
 type CiliumNode struct {
 	// +k8s:openapi-gen=false
 	// +deepequal-gen=false
@@ -715,7 +719,7 @@ type CiliumNode struct {
 	Status NodeStatus `json:"status"`
 }
 
-// NodeAddress is a node address
+// NodeAddress is a node address.
 type NodeAddress struct {
 	// Type is the type of the node address
 	Type addressing.AddressType `json:"type,omitempty"`
@@ -762,7 +766,7 @@ type NodeSpec struct {
 // +kubebuilder:validation:Optional
 
 // HealthAddressingSpec is the addressing information required to do
-// connectivity health checking
+// connectivity health checking.
 type HealthAddressingSpec struct {
 	// IPv4 is the IPv4 address of the IPv4 health endpoint
 	IPv4 string `json:"ipv4,omitempty"`

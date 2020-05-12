@@ -27,7 +27,7 @@ spec:
   validation:
     openAPIV3Schema:
       description: CiliumNetworkPolicy is a Kubernetes third-party resource with an
-        extended version of NetworkPolicy
+        extended version of NetworkPolicy.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -2802,7 +2802,7 @@ spec:
             derivativePolicies:
               additionalProperties:
                 description: CiliumNetworkPolicyNodeStatus is the status of a Cilium
-                  policy rule for a specific node
+                  policy rule for a specific node.
                 properties:
                   annotations:
                     additionalProperties:
@@ -2845,7 +2845,7 @@ spec:
             nodes:
               additionalProperties:
                 description: CiliumNetworkPolicyNodeStatus is the status of a Cilium
-                  policy rule for a specific node
+                  policy rule for a specific node.
                 properties:
                   annotations:
                     additionalProperties:

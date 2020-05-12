@@ -2801,7 +2801,7 @@ spec:
             derivativePolicies:
               additionalProperties:
                 description: CiliumNetworkPolicyNodeStatus is the status of a Cilium
-                  policy rule for a specific node
+                  policy rule for a specific node.
                 properties:
                   annotations:
                     additionalProperties:
@@ -2844,7 +2844,7 @@ spec:
             nodes:
               additionalProperties:
                 description: CiliumNetworkPolicyNodeStatus is the status of a Cilium
-                  policy rule for a specific node
+                  policy rule for a specific node.
                 properties:
                   annotations:
                     additionalProperties:
