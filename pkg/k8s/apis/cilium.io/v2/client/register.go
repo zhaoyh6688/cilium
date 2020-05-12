@@ -154,25 +154,19 @@ func createCNPCRD(clientset apiextensionsclient.Interface) error {
 // createCGNPCRD creates and updates the CiliumGlobalNetworkPolicies CRD. It should be called
 // on agent startup but is idempotent and safe to call again.
 func createCCNPCRD(clientset apiextensionsclient.Interface) error {
-	var (
-		// CustomResourceDefinitionSingularName is the singular name of custom resource definition
-		CustomResourceDefinitionSingularName = "ciliumclusterwidenetworkpolicy"
-
-		// CustomResourceDefinitionPluralName is the plural name of custom resource definition
-		CustomResourceDefinitionPluralName = "ciliumclusterwidenetworkpolicies"
-
-		// CustomResourceDefinitionShortNames are the abbreviated names to refer to this CRD's instances
-		CustomResourceDefinitionShortNames = []string{"ccnp"}
-
-		// CustomResourceDefinitionKind is the Kind name of custom resource definition
-		CustomResourceDefinitionKind = CCNPKindDefinition
-
-		CRDName = CustomResourceDefinitionPluralName + "." + SchemeGroupVersion.Group
-	)
+	crdBytes, err := examplesCrdsCiliumclusterwidenetworkpoliciesYamlBytes()
+	if err != nil {
+		panic(err)
+	}
+	ciliumCRD := apiextensionsv1beta1.CustomResourceDefinition{}
+	err = yaml.Unmarshal(crdBytes, &ciliumCRD)
+	if err != nil {
+		panic(err)
+	}
 
 	res := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: CRDName,
+			Name: ciliumCRD.Spec.Names.Plural + "." + SchemeGroupVersion.Group,
 			Labels: map[string]string{
 				CustomResourceDefinitionSchemaVersionKey: CustomResourceDefinitionSchemaVersion,
 			},
@@ -181,16 +175,14 @@ func createCCNPCRD(clientset apiextensionsclient.Interface) error {
 			Group:   SchemeGroupVersion.Group,
 			Version: SchemeGroupVersion.Version,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     CustomResourceDefinitionPluralName,
-				Singular:   CustomResourceDefinitionSingularName,
-				ShortNames: CustomResourceDefinitionShortNames,
-				Kind:       CustomResourceDefinitionKind,
+				Plural:     ciliumCRD.Spec.Names.Plural,
+				Singular:   ciliumCRD.Spec.Names.Singular,
+				ShortNames: ciliumCRD.Spec.Names.ShortNames,
+				Kind:       ciliumCRD.Spec.Names.Kind,
 			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
-			},
-			Scope:      apiextensionsv1beta1.ClusterScoped,
-			Validation: &cnpCRV,
+			Subresources: ciliumCRD.Spec.Subresources,
+			Scope:        ciliumCRD.Spec.Scope,
+			Validation:   ciliumCRD.Spec.Validation,
 		},
 	}
 
