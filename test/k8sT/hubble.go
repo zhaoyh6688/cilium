@@ -39,9 +39,10 @@ var _ = Describe("K8sHubbleTest", func() {
 
 		demoPath string
 
-		app1Service = "app1-service"
-		app1Labels  = "id=app1,zgroup=testapp"
-		apps        = []string{helpers.App1, helpers.App2, helpers.App3}
+		app1Service    = "app1-service"
+		app1Labels     = "id=app1,zgroup=testapp"
+		apps           = []string{helpers.App1, helpers.App2, helpers.App3}
+		prometheusPort = 9091
 	)
 
 	hubbleGetPodOnNodeWithLabel := func(ns, label string) (string, error) {
@@ -119,7 +120,9 @@ var _ = Describe("K8sHubbleTest", func() {
 		demoPath = helpers.ManifestGet(kubectl.BasePath(), "demo.yaml")
 
 		DeployCiliumOptionsAndDNS(kubectl, ciliumFilename, map[string]string{
-			"global.hubble.cli.enabled": "true",
+			"global.hubble.cli.enabled":     "true",
+			"global.hubble.metricsServer":   fmt.Sprintf(":%d", prometheusPort),
+			"global.hubble.metrics.enabled": `"{dns:query;ignoreAAAA,drop,tcp,flow,port-distribution,icmp,http}"`,
 		})
 
 		err := kubectl.WaitforPods(hubbleNamespace, hubbleSelector, helpers.HelperTimeout)
@@ -187,6 +190,13 @@ var _ = Describe("K8sHubbleTest", func() {
 				"hubble observe --last 1 --json --type trace --from-pod %s/%s --to-namespace %s --to-label %s --to-port %d",
 				namespaceForTest, appPods[helpers.App2], namespaceForTest, app1Labels, app1Port), `"Type":"L3_L4"`)
 			Expect(err).To(BeNil(), "hubble observe query timed out")
+
+			// Basic check for L4 Prometheus metrics.
+			_, nodeIP := kubectl.GetNodeInfo(helpers.K8s1)
+			Expect(nodeIP).NotTo(BeEmpty(), "failed to get node IP for %s", helpers.K8s1)
+			err = hubbleExecUntilMatch(hubbleNamespace, hubblePodK8s1, fmt.Sprintf("curl %s:%d/metrics", nodeIP, prometheusPort),
+				`hubble_flows_processed_total{subtype="to-endpoint",type="Trace",verdict="FORWARDED"}`)
+			Expect(err).To(BeNil(), "didn't see to-endpoint flows in prometheus metrics")
 		})
 
 		It("Test L7 Flow", func() {
@@ -201,6 +211,14 @@ var _ = Describe("K8sHubbleTest", func() {
 				"hubble observe --last 1 --json --type l7 --from-pod %s/%s --to-namespace %s --to-label %s --protocol http",
 				namespaceForTest, appPods[helpers.App2], namespaceForTest, app1Labels), `"Type":"L7"`)
 			Expect(err).To(BeNil(), "hubble observe query timed out")
+
+			// Basic check for L7 Prometheus metrics.
+			_, nodeIP := kubectl.GetNodeInfo(helpers.K8s1)
+			Expect(nodeIP).NotTo(BeEmpty(), "failed to get node IP for %s", helpers.K8s1)
+			err = hubbleExecUntilMatch(hubbleNamespace, hubblePodK8s1, fmt.Sprintf("curl %s:%d/metrics", nodeIP, prometheusPort),
+				`hubble_flows_processed_total{subtype="HTTP",type="L7",verdict="FORWARDED"}`)
+			Expect(err).To(BeNil(), "didn't see HTTP flows in prometheus metrics")
+
 		})
 	})
 })
