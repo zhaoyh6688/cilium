@@ -17,7 +17,8 @@ spec:
   scope: Namespaced
   validation:
     openAPIV3Schema:
-      description: CiliumEndpoint is the status of a Cilium policy rule
+      description: CiliumEndpoint is a CRD that represents an endpoint managed by
+        Cilium.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
