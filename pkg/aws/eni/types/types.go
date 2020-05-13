@@ -44,7 +44,7 @@ type ENISpec struct {
 	//
 	// OBSOLETE: This field is obsolete, please use Spec.IPAM.MinAllocate
 	//
-	// +optional
+	// +kubebuilder:validation:Minimum=0
 	MinAllocate int `json:"min-allocate,omitempty"`
 
 	// PreAllocate defines the number of IP addresses that must be
@@ -54,7 +54,7 @@ type ENISpec struct {
 	//
 	// OBSOLETE: This field is obsolete, please use Spec.IPAM.PreAllocate
 	//
-	// +optional
+	// +kubebuilder:validation:Minimum=0
 	PreAllocate int `json:"pre-allocate,omitempty"`
 
 	// MaxAboveWatermark is the maximum number of addresses to allocate
@@ -66,7 +66,7 @@ type ENISpec struct {
 	//
 	// OBSOLETE: This field is obsolete, please use Spec.IPAM.MaxAboveWatermark
 	//
-	// +optional
+	// +kubebuilder:validation:Minimum=0
 	MaxAboveWatermark int `json:"max-above-watermark,omitempty"`
 
 	// FirstInterfaceIndex is the index of the first ENI to use for IP
@@ -74,25 +74,19 @@ type ENISpec struct {
 	// FirstInterfaceIndex is set to 1, then only eth1 and eth2 will be
 	// used for IP allocation, eth0 will be ignored for PodIP allocation.
 	//
-	// +optional
+	// +kubebuilder:validation:Minimum=0
 	FirstInterfaceIndex *int `json:"first-interface-index,omitempty"`
 
 	// SecurityGroups is the list of security groups to attach to any ENI
 	// that is created and attached to the instance.
-	//
-	// +optional
 	SecurityGroups []string `json:"security-groups,omitempty"`
 
 	// SecurityGroupTags is the list of tags to use when evaliating what
 	// AWS security groups to use for the ENI.
-	//
-	// +optional
 	SecurityGroupTags map[string]string `json:"security-group-tags,omitempty"`
 
 	// SubnetTags is the list of tags to use when evaluating what AWS
 	// subnets to use for ENI and IP allocation
-	//
-	// +optional
 	SubnetTags map[string]string `json:"subnet-tags,omitempty"`
 
 	// VpcID is the VPC ID to use when allocating ENIs
@@ -105,8 +99,6 @@ type ENISpec struct {
 	// DeleteOnTermination defines that the ENI should be deleted when the
 	// associated instance is terminated. If the parameter is not set the
 	// default behavior is to delete the ENI on instance termination.
-	//
-	// +optional
 	DeleteOnTermination *bool `json:"delete-on-termination,omitempty"`
 }
 
