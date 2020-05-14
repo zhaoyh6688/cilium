@@ -445,14 +445,10 @@ func needsUpdate(clusterCRD *apiextensionsv1beta1.CustomResourceDefinition) bool
 }
 
 var (
-	// cepCRV is a minimal validation for CEP objects. Since only the agent is
-	// creating them, it is better to be permissive and have some data, if buggy,
-	// than to have no data in k8s.
-	cepCRV = apiextensionsv1beta1.CustomResourceValidation{
-		OpenAPIV3Schema: &apiextensionsv1beta1.JSONSchemaProps{},
-	}
-
-	cnpCRV = apiextensionsv1beta1.CustomResourceValidation{
+	// TODO(christarazi): This is needed to allow
+	// cilium/cmd/preflight_k8s_valid_cnp.go to compile; unsure if we still
+	// want this.
+	CNPCRV = apiextensionsv1beta1.CustomResourceValidation{
 		OpenAPIV3Schema: &apiextensionsv1beta1.JSONSchemaProps{},
 	}
 )
