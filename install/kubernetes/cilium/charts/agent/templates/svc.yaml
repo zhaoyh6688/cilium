@@ -17,7 +17,8 @@ spec:
   selector:
     k8s-app: cilium
 {{- end }}
-{{- if and .Values.global.hubble.metrics.enabled }}
+{{- if .Values.global.hubble }}
+  {{- if .Values.global.hubble.metrics.enabled }}
 ---
 kind: Service
 apiVersion: v1
@@ -39,5 +40,6 @@ spec:
     targetPort: hubble-metrics
   selector:
     k8s-app: cilium
+  {{- end }}
 {{- end }}
 

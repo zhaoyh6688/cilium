@@ -6,4 +6,4 @@
 # - eni
 # - azure
 # - crd
-ipam: "cluster-pool"
+#ipam: "cluster-pool"

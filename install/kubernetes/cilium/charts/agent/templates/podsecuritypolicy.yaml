@@ -1,4 +1,5 @@
-{{- if .Values.global.psp.enabled }}
+{{- if .Values.global.psp }}
+  {{- if .Values.global.psp.enabled }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -58,4 +59,5 @@ subjects:
 - kind: ServiceAccount
   name: cilium
   namespace: {{ .Release.Namespace }}
+  {{- end }}
 {{- end }}

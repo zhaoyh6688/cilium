@@ -55,12 +55,14 @@ data:
   cilium-endpoint-gc-interval: "{{ .Values.global.endpointGCInterval }}"
 {{- end }}
 
+{{- if .Values.global.identityChangeGracePeriod }}
   # identity-change-grace-period is the grace period that needs to pass
   # before an endpoint that has changed its identity will start using
   # that new identity. During the grace period, the new identity has
   # already been allocated and other nodes in the cluster have a chance
   # to whitelist the new upcoming identity of the endpoint.
   identity-change-grace-period: {{ .Values.global.identityChangeGracePeriod | quote }}
+{{- end }}
 
   # If you want to run cilium in debug mode change this value to true
   debug: {{ .Values.global.debug.enabled | quote }}
@@ -69,10 +71,12 @@ data:
   debug-verbose: "{{ .Values.global.debug.verbose }}"
 {{- end }}
 
-{{- if .Values.global.agent.healthPort }}
+{{- if .Values.global.agent }}
+  {{- if .Values.global.agent.healthPort }}
   # Set the TCP port for the agent health status API. This is not the port used
   # for cilium-health.
   agent-health-port: "{{ .Values.global.agent.healthPort }}"
+  {{- end }}
 {{- end }}
 
 {{- if .Values.global.prometheus.enabled }}
@@ -85,13 +89,15 @@ data:
   prometheus-serve-addr: ":{{ .Values.global.prometheus.port }}"
 {{- end }}
 
-{{- if .Values.global.operatorPrometheus.enabled }}
+{{- if .Values.global.operatorPrometheus }}
+  {{- if .Values.global.operatorPrometheus.enabled }}
   # If you want metrics enabled in cilium-operator, set the port for
   # which the Cilium Operator will have their metrics exposed.
   # NOTE that this will open the port on the nodes where Cilium operator pod
   # is scheduled.
   operator-prometheus-serve-addr: ":{{ .Values.global.operatorPrometheus.port }}"
   enable-metrics: "true"
+  {{- end }}
 {{- end }}
 
   # Enable IPv4 addressing. If enabled, all endpoints are allocated an IPv4
@@ -132,7 +138,9 @@ data:
   custom-cni-conf: "{{ .Values.global.cni.customConf }}"
 {{- end }}
 
+{{- if .Values.global.bpf.clockProbe }}
   enable-bpf-clock-probe: {{ .Values.global.bpf.clockProbe | quote }}
+{{- end }}
 
   # If you want cilium monitor to aggregate tracing for packets, set this level
   # to "low", "medium", or "maximum". The higher the level, the less packets
@@ -151,8 +159,10 @@ data:
   # Only effective when monitor aggregation is set to "medium" or higher.
   monitor-aggregation-flags: {{ .Values.global.bpf.monitorFlags }}
 
+{{- if .Values.global.blacklistConflictingRoutes }}
   # Configure blacklisting of local routes not owned by Cilium.
   blacklist-conflicting-routes: "{{ .Values.global.blacklistConflictingRoutes }}"
+{{- end }}
 
 {{- if or .Values.global.bpf.ctTcpMax .Values.global.bpf.ctAnyMax }}
   # bpf-ct-global-*-max specifies the maximum number of connections
@@ -192,9 +202,11 @@ data:
   bpf-policy-map-max: "{{ .Values.global.bpf.policyMapMax }}"
 {{- end }}
 
+{{- if .Values.global.bpf.mapDynamicSizeRatio }}
   # Specifies the ratio (0.0-1.0) of total system memory to use for dynamic
   # sizing of the TCP CT, non-TCP CT, NAT and policy BPF maps.
   bpf-map-dynamic-size-ratio: "{{ .Values.global.bpf.mapDynamicSizeRatio }}"
+{{- end }}
 
   # Pre-allocation of map entries allows per-packet latency to be reduced, at
   # the expense of up-front memory allocation for the entries in the maps. The
@@ -249,11 +261,13 @@ data:
   blacklist-conflicting-routes: "false"
 {{- end }}
 
-{{- if .Values.global.azure.enabled }}
+{{- if .Values.global.azure }}
+  {{- if .Values.global.azure.enabled }}
   enable-endpoint-routes: "true"
   auto-create-cilium-node-resource: "true"
   blacklist-conflicting-routes: "false"
   enable-local-node-route: "false"
+  {{- end }}
 {{- end }}
 
 {{- if .Values.global.flannel.enabled }}
@@ -319,12 +333,16 @@ data:
 {{- end }}
 
   masquerade: {{ .Values.global.masquerade | quote }}
+{{- if .Values.global.bpfMasquerade }}
   enable-bpf-masquerade: {{ .Values.global.bpfMasquerade | quote }}
+{{- end }}
 {{- if .Values.global.egressMasqueradeInterfaces }}
   egress-masquerade-interfaces: {{ .Values.global.egressMasqueradeInterfaces }}
 {{- end }}
-{{- if and .Values.global.ipMasqAgent .Values.global.ipMasqAgent.enabled }}
+{{- if .Values.global.ipMasqAgent }}
+  {{- if .Values.global.ipMasqAgent.enabled }}
   enable-ip-masq-agent: "true"
+  {{- end }}
 {{- end }}
 
 {{- if .Values.global.encryption.enabled }}
@@ -369,10 +387,14 @@ data:
 {{- if .Values.global.hostServices }}
 {{- if .Values.global.hostServices.enabled }}
   enable-host-reachable-services: {{ .Values.global.hostServices.enabled | quote }}
+{{- else }}
+  enable-host-reachable-services: "false"
 {{- end }}
 {{- if ne .Values.global.hostServices.protocols "tcp,udp" }}
   host-reachable-services-protos: {{ .Values.global.hostServices.protocols }}
 {{- end }}
+{{- else }}
+  enable-host-reachable-services: "false"
 {{- end }}
 {{- if .Values.global.hostPort }}
 {{- if eq .Values.global.kubeProxyReplacement "partial" }}
@@ -382,11 +404,17 @@ data:
 {{- if .Values.global.externalIPs }}
 {{- if eq .Values.global.kubeProxyReplacement "partial" }}
   enable-external-ips: {{ .Values.global.externalIPs.enabled | quote }}
+{{- else }}
+  enable-external-ips: "false"
 {{- end }}
+{{- else }}
+  enable-external-ips: "false"
 {{- end }}
 {{- if .Values.global.nodePort }}
 {{- if eq .Values.global.kubeProxyReplacement "partial" }}
   enable-node-port: {{ .Values.global.nodePort.enabled | quote }}
+{{- else }}
+  enable-node-port: "false"
 {{- end }}
 {{- if .Values.global.nodePort.range }}
   node-port-range: {{ .Values.global.nodePort.range | quote }}
@@ -405,6 +433,8 @@ data:
 {{- end }}
   node-port-bind-protection: {{ .Values.global.nodePort.bindProtection | quote }}
   enable-auto-protect-node-port-range: {{ .Values.global.nodePort.autoProtectPortRange | quote }}
+{{- else }}
+  enable-node-port: "false"
 {{- end }}
 {{- if .Values.global.sessionAffinity }}
   enable-session-affinity: {{ .Values.global.sessionAffinity.enabled | quote }}
@@ -425,12 +455,16 @@ data:
 {{- if and .Values.global.k8s .Values.global.k8s.requireIPv4PodCIDR }}
   k8s-require-ipv4-pod-cidr: {{ .Values.global.k8s.requireIPv4PodCIDR | quote }}
 {{- else }}
+{{- if .Values.ipam }}
 {{- if eq .Values.ipam "cluster-pool" }}
   k8s-require-ipv4-pod-cidr: {{ .Values.global.ipv4.enabled | quote}}
 {{- end }}
 {{- end }}
+{{- end }}
+{{- if .Values.ipam }}
 {{- if eq .Values.ipam "cluster-pool" }}
   k8s-require-ipv6-pod-cidr: {{ .Values.global.ipv6.enabled | quote}}
+{{- end }}
 {{- end }}
 {{- if and .Values.global.endpointRoutes .Values.global.endpointRoutes.enabled }}
   enable-endpoint-routes: {{ .Values.global.endpointRoutes.enabled | quote }}
@@ -444,16 +478,22 @@ data:
 {{- if .Values.global.kubeConfigPath }}
   k8s-kubeconfig-path: {{ .Values.global.kubeConfigPath | quote }}
 {{- end }}
-{{- if and ( .Values.global.endpointHealthChecking.enabled ) (or (eq .Values.global.cni.chainingMode "portmap") (eq .Values.global.cni.chainingMode "none")) }}
+{{- if .Values.global.endpointHealthChecking }}
+  {{- if or (eq .Values.global.cni.chainingMode "portmap") (eq .Values.global.cni.chainingMode "none") }}
   enable-endpoint-health-checking: "true"
-{{- else}}
+  {{- else}}
   # Disable health checking, when chaining mode is not set to portmap or none
   enable-endpoint-health-checking: "false"
-{{- end }}
-{{- if .Values.global.healthChecking.enabled }}
-  enable-health-checking: "true"
+  {{- end }}
 {{- else}}
+  enable-endpoint-health-checking: "true"
+{{- end }}
+{{- if .Values.global.healthChecking }}
+  {{- if .Values.global.healthChecking.enabled }}
+  enable-health-checking: "true"
+  {{- else}}
   enable-health-checking: "false"
+  {{- end }}
 {{- end }}
 {{- if or .Values.global.wellKnownIdentities.enabled .Values.global.etcd.managed }}
   enable-well-known-identities: "true"
@@ -462,8 +502,12 @@ data:
 {{- end }}
   enable-remote-node-identity: {{ .Values.global.remoteNodeIdentity | quote }}
 
+{{- if .Values.global.synchronizeK8sNodes }}
   synchronize-k8s-nodes: {{ .Values.global.synchronizeK8sNodes | quote }}
+{{- end }}
+{{- if .Values.global.policyAuditMode }}
   policy-audit-mode: {{ .Values.global.policyAuditMode | quote }}
+{{- end }}
 
 {{- if .Values.global.ipv4.enabled }}
   operator-api-serve-addr: '127.0.0.1:9234'
@@ -471,21 +515,22 @@ data:
   operator-api-serve-addr: '[::1]:9234'
 {{- end }}
 
+{{- if .Values.global.hubble }}
   # Enable Hubble gRPC service.
   enable-hubble: {{ .Values.global.hubble.enabled  | quote }}
-{{- if .Values.global.hubble.enabled }}
+  {{- if .Values.global.hubble.enabled }}
   # UNIX domain socket for Hubble server to listen to.
   hubble-socket-path:  {{ .Values.global.hubble.socketPath | quote }}
-{{- if .Values.global.hubble.eventQueueSize }}
+    {{- if .Values.global.hubble.eventQueueSize }}
   # Buffer size of the channel for Hubble to receive monitor events. If this field is not set,
   # the buffer size is set to the default monitor queue size.
   hubble-event-queue-size: {{ .Values.global.hubble.eventQueueSize | quote }}
-{{- end }}
-{{- if .Values.global.hubble.flowBufferSize }}
+    {{- end }}
+    {{- if .Values.global.hubble.flowBufferSize }}
   # Size of the buffer to store recent flows.
   hubble-flow-buffer-size: {{ .Values.global.hubble.flowBufferSize | quote }}
-{{- end }}
-{{- if .Values.global.hubble.metrics.enabled }}
+    {{- end }}
+    {{- if .Values.global.hubble.metrics.enabled }}
   # Address to expose Hubble metrics (e.g. ":7070"). Metrics server will be disabled if this
   # field is not set.
   hubble-metrics-server: ":{{ .Values.global.hubble.metrics.port }}"
@@ -494,16 +539,23 @@ data:
   # https://github.com/cilium/hubble/blob/master/Documentation/metrics.md
   hubble-metrics: {{- range .Values.global.hubble.metrics.enabled }}
     {{.}}
-  {{- end }}
-{{- end }}
+      {{- end }}
+    {{- end }}
   # An additional address for Hubble server to listen to (e.g. ":4244").
   hubble-listen-address: {{ .Values.global.hubble.listenAddress | quote }}
+  {{- end }}
 {{- end }}
 
+{{- if .Values.global.disableIptablesFeederRules}}
   # A space separated list of iptables chains to disable when installing feeder rules.
   disable-iptables-feeder-rules: {{ .Values.global.disableIptablesFeederRules | join " " | quote }}
+{{- end }}
+{{- if .Values.ipam }}
   ipam: {{ default "cluster-pool" .Values.ipam | quote }}
+{{- end }}
+{{- if .Values.ipam }}
 {{- if eq .Values.ipam "cluster-pool" }}
+{{- if .Values.global.ipam }}
 {{- if .Values.global.ipv4.enabled }}
   cluster-pool-ipv4-cidr: {{ .Values.global.ipam.operator.clusterPoolIPv4PodCIDR | quote }}
   cluster-pool-ipv4-mask-size: {{ .Values.global.ipam.operator.clusterPoolIPv4MaskSize | quote  }}
@@ -511,6 +563,8 @@ data:
 {{- if .Values.global.ipv6.enabled }}
   cluster-pool-ipv6-cidr: {{ .Values.global.ipam.operator.clusterPoolIPv6PodCIDR | quote }}
   cluster-pool-ipv6-mask-size: {{ .Values.global.ipam.operator.clusterPoolIPv6MaskSize | quote }}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 

@@ -35,10 +35,20 @@ spec:
         command:
 {{- if .Values.global.eni }}
         - cilium-operator-aws
-{{- else if .Values.global.azure.enabled }}
+{{- else if .Values.global.azure }}
+    {{- if .Values.global.azure.enabled }}
         - cilium-operator-azure
-{{- else if .Values.global.ipam.operator }}
+    {{- else if .Values.global.ipam.operator }}
         - cilium-operator-generic
+    {{- else }}
+        - cilium-operator
+    {{- end }}
+{{- else if .Values.global.ipam }}
+    {{- if .Values.global.ipam.operator }}
+        - cilium-operator-generic
+    {{- else }}
+        - cilium-operator
+    {{- end }}
 {{- else }}
         - cilium-operator
 {{- end }}
@@ -48,9 +58,11 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
-{{- if .Values.global.ci.kubeCacheMutationDetector }}
+{{- if .Values.global.ci }}
+    {{- if .Values.global.ci.kubeCacheMutationDetector }}
         - name: KUBE_CACHE_MUTATION_DETECTOR
           value: "true"
+    {{- end }}
 {{- end }}
         - name: CILIUM_K8S_NAMESPACE
           valueFrom:
@@ -89,38 +101,48 @@ spec:
         - name: KUBERNETES_SERVICE_PORT
           value: {{ .Values.global.k8sServicePort | quote }}
 {{- end }}
-{{- if .Values.global.azure.subscriptionID }}
+{{- if .Values.global.azure }}
+    {{- if .Values.global.azure.subscriptionID }}
         - name: AZURE_SUBSCRIPTION_ID
           value: {{ .Values.global.azure.subscriptionID }}
-{{- end }}
-{{- if .Values.global.azure.tenantID }}
+    {{- end }}
+    {{- if .Values.global.azure.tenantID }}
         - name: AZURE_TENANT_ID
           value: {{ .Values.global.azure.tenantID }}
-{{- end }}
-{{- if .Values.global.azure.resourceGroup }}
+    {{- end }}
+    {{- if .Values.global.azure.resourceGroup }}
         - name: AZURE_RESOURCE_GROUP
           value: {{ .Values.global.azure.resourceGroup }}
-{{- end }}
-{{- if .Values.global.azure.clientID }}
+    {{- end }}
+    {{- if .Values.global.azure.clientID }}
         - name: AZURE_CLIENT_ID
           value: {{ .Values.global.azure.clientID }}
-{{- end }}
-{{- if .Values.global.azure.clientSecret }}
+    {{- end }}
+    {{- if .Values.global.azure.clientSecret }}
         - name: AZURE_CLIENT_SECRET
           value: {{ .Values.global.azure.clientSecret }}
+    {{- end }}
 {{- end }}
 {{- if contains "/" .Values.image }}
         image: "{{ .Values.image }}"
-{{- else }}
-{{- if .Values.global.eni }}
+{{- else if .Values.global.eni }}
         image: "{{ .Values.global.registry }}/{{ .Values.image }}-aws:{{ .Values.global.tag }}"
-{{- else if .Values.global.azure.enabled }}
+{{- else if .Values.global.azure }}
+    {{- if .Values.global.azure.enabled }}
         image: "{{ .Values.global.registry }}/{{ .Values.image }}-azure:{{ .Values.global.tag }}"
-{{- else if .Values.global.ipam.operator }}
+    {{- else if .Values.global.ipam.operator }}
         image: "{{ .Values.global.registry }}/{{ .Values.image }}-generic:{{ .Values.global.tag }}"
+    {{- else }}
+        image: "{{ .Values.global.registry }}/{{ .Values.image }}:{{ .Values.global.tag }}"
+    {{- end }}
+{{- else if .Values.global.ipam }}
+    {{- if .Values.global.ipam.operator }}
+        image: "{{ .Values.global.registry }}/{{ .Values.image }}-generic:{{ .Values.global.tag }}"
+    {{- else }}
+        image: "{{ .Values.global.registry }}/{{ .Values.image }}:{{ .Values.global.tag }}"
+    {{- end }}
 {{- else }}
         image: "{{ .Values.global.registry }}/{{ .Values.image }}:{{ .Values.global.tag }}"
-{{- end }}
 {{- end }}
         imagePullPolicy: {{ .Values.global.pullPolicy }}
         name: cilium-operator

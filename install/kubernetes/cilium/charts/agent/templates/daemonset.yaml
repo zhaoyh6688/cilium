@@ -65,7 +65,11 @@ spec:
           httpGet:
             host: '127.0.0.1'
             path: /healthz
+  {{- if .Values.global.agent }}
             port: {{ .Values.global.agent.healthPort }}
+  {{- else }}
+            port: "9876"
+  {{- end }}
             scheme: HTTP
             httpHeaders:
             - name: "brief"
@@ -90,7 +94,11 @@ spec:
           httpGet:
             host: '127.0.0.1'
             path: /healthz
+  {{- if .Values.global.agent }}
             port: {{ .Values.global.agent.healthPort }}
+  {{- else }}
+            port: "9876"
+  {{- end }}
             scheme: HTTP
             httpHeaders:
             - name: "brief"
@@ -108,9 +116,11 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
+{{- if .Values.global.ci }}
 {{- if .Values.global.ci.kubeCacheMutationDetector }}
         - name: KUBE_CACHE_MUTATION_DETECTOR
           value: "true"
+{{- end }}
 {{- end }}
         - name: CILIUM_K8S_NAMESPACE
           valueFrom:
@@ -174,20 +184,46 @@ spec:
           {{- toYaml .Values.resources | trim | nindent 10 }}
 {{- end }}
         name: cilium-agent
-{{- if or .Values.global.prometheus.enabled .Values.global.hubble.metrics.enabled }}
+{{- if .Values.global.prometheus }}
+        {{- if .Values.global.prometheus.enabled }}
         ports:
-{{- if .Values.global.prometheus.enabled }}                
+        {{- end }}
+    {{- if .Values.global.prometheus.enabled }}
         - containerPort: {{ .Values.global.prometheus.port }}
           hostPort: {{ .Values.global.prometheus.port }}
           name: prometheus
           protocol: TCP
-{{- end }}
-{{- if .Values.global.hubble.metrics.enabled }}
+    {{- end }}
+    {{- if .Values.hubble }}
+      {{- if .Values.hubble.metrics.enabled }}
+        {{- if not .Values.global.prometheus.enabled }}
+        ports:
+        {{- end }}
         - containerPort: {{ .Values.global.hubble.metrics.port }}
           hostPort: {{ .Values.global.hubble.metrics.port }}
           name: hubble-metrics
           protocol: TCP
-{{- end }}
+      {{- end }}
+    {{- end }}
+{{- else if .Values.hubble }}
+        {{- if .Values.global.prometheus.enabled }}
+        ports:
+        {{- end }}
+    {{- if .Values.global.prometheus.enabled }}
+        - containerPort: {{ .Values.global.prometheus.port }}
+          hostPort: {{ .Values.global.prometheus.port }}
+          name: prometheus
+          protocol: TCP
+    {{- end }}
+    {{- if .Values.hubble.metrics.enabled }}
+        {{- if not .Values.global.prometheus.enabled }}
+        ports:
+        {{- end }}
+        - containerPort: {{ .Values.global.hubble.metrics.port }}
+          hostPort: {{ .Values.global.hubble.metrics.port }}
+          name: hubble-metrics
+          protocol: TCP
+  {{- end }}
 {{- end }}
         securityContext:
           capabilities:
@@ -223,10 +259,12 @@ spec:
         - mountPath: /tmp/cilium/config-map
           name: cilium-config-path
           readOnly: true
-{{- if and .Values.global.ipMasqAgent .Values.global.ipMasqAgent.enabled }}
+{{- if .Values.global.ipMasqAgent }}
+  {{- if .Values.global.ipMasqAgent.enabled }}
         - mountPath: /etc/config
           name: ip-masq-agent
           readOnly: true
+  {{- end }}
 {{- end }}
 {{- if .Values.global.cni.configMap }}
         - mountPath: {{ .Values.global.cni.confFileMountPath }}
@@ -427,7 +465,8 @@ spec:
       - configMap:
           name: cilium-config
         name: cilium-config-path
-{{- if and .Values.global.ipMasqAgent .Values.global.ipMasqAgent.enabled }}
+{{- if .Values.global.ipMasqAgent }}
+  {{- if .Values.global.ipMasqAgent.enabled }}
       - configMap:
           name: ip-masq-agent
           optional: true
@@ -435,6 +474,7 @@ spec:
           - key: config
             path: ip-masq-agent
         name: ip-masq-agent
+  {{- end }}
 {{- end }}
 {{- if .Values.global.encryption.enabled }}
       - name: cilium-ipsec-secrets
