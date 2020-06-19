@@ -31,11 +31,11 @@ type ServiceKey interface {
 	// Return the BPF map matching the key type
 	Map() *bpf.Map
 
-	// Set slave slot for the key
-	SetSlave(slave int)
+	// Set endpoint slot for the key
+	SetEndpoint(endpoint int)
 
-	// Get slave slot of the key
-	GetSlave() int
+	// Get endpoint slot of the key
+	GetEndpoint() int
 
 	// Get frontend IP address
 	GetAddress() net.IP

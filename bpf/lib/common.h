@@ -359,7 +359,7 @@ enum {
 #define REASON_FORWARDED	0
 #define REASON_PLAINTEXT	3
 #define REASON_DECRYPT		4
-#define REASON_LB_NO_SLAVE	5
+#define REASON_LB_NO_ENDPOINT	5
 #define REASON_LB_NO_BACKEND	6
 #define REASON_LB_REVNAT_UPDATE	7
 #define REASON_LB_REVNAT_STALE	8
@@ -491,7 +491,7 @@ enum {
 #define TUPLE_F_OUT		0	/* Outgoing flow */
 #define TUPLE_F_IN		1	/* Incoming flow */
 #define TUPLE_F_RELATED		2	/* Flow represents related packets */
-#define TUPLE_F_SERVICE		4	/* Flow represents service/slave map */
+#define TUPLE_F_SERVICE		4	/* Flow represents service/endpoint map */
 
 #define CT_EGRESS 0
 #define CT_INGRESS 1
@@ -572,7 +572,7 @@ struct ct_entry {
 struct lb6_key {
 	union v6addr address;	/* Service virtual IPv6 address */
 	__be16 dport;		/* L4 port filter, if unset, all ports apply */
-	__u16 slave;		/* Backend iterator, 0 indicates the master service */
+	__u16 endpoint;		/* Backend iterator, 0 indicates the primary service */
 	__u8 proto;		/* L4 protocol, currently not used (set to 0) */
 	__u8 pad[3];
 };
@@ -581,7 +581,7 @@ struct lb6_key {
 struct lb6_service {
 	union {
 		__u32 backend_id;	/* Backend ID in lb6_backends */
-		__u32 affinity_timeout;	/* In seconds, only for master svc */
+		__u32 affinity_timeout;	/* In seconds, only for primary svc */
 	};
 	__u16 count;
 	__u16 rev_nat_index;
@@ -623,7 +623,7 @@ struct ipv6_revnat_entry {
 struct lb4_key {
 	__be32 address;		/* Service virtual IPv4 address */
 	__be16 dport;		/* L4 port filter, if unset, all ports apply */
-	__u16 slave;		/* Backend iterator, 0 indicates the master service */
+	__u16 endpoint;		/* Backend iterator, 0 indicates the primary service */
 	__u8 proto;		/* L4 protocol, currently not used (set to 0) */
 	__u8 pad[3];
 };
@@ -631,9 +631,9 @@ struct lb4_key {
 struct lb4_service {
 	union {
 		__u32 backend_id;		/* Backend ID in lb4_backends */
-		__u32 affinity_timeout;		/* In seconds, only for master svc */
+		__u32 affinity_timeout;		/* In seconds, only for primary svc */
 	};
-	/* For the master service, count denotes number of service endpoints.
+	/* For the primary service, count denotes number of service endpoints.
 	 * For service endpoints, zero. (Previously, legacy service ID)
 	 */
 	__u16 count;

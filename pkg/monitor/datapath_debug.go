@@ -63,26 +63,26 @@ const (
 	DbgToHost
 	DbgToStack
 	DbgPktHash
-	DbgLb6LookupMaster
-	DbgLb6LookupMasterFail
-	DbgLb6LookupSlave
-	DbgLb6LookupSlaveSuccess
-	DbgLb6LookupSlaveV2Fail
+	DbgLb6LookupPrimary
+	DbgLb6LookupPrimaryFail
+	DbgLb6LookupEndpoint
+	DbgLb6LookupEndpointSuccess
+	DbgLb6LookupEndpointV2Fail
 	DbgLb6LookupBackendFail
 	DbgLb6ReverseNatLookup
 	DbgLb6ReverseNat
-	DbgLb4LookupMaster
-	DbgLb4LookupMasterFail
-	DbgLb4LookupSlave
-	DbgLb4LookupSlaveSuccess
-	DbgLb4LookupSlaveV2Fail
+	DbgLb4LookupPrimary
+	DbgLb4LookupPrimaryFail
+	DbgLb4LookupEndpoint
+	DbgLb4LookupEndpointSuccess
+	DbgLb4LookupEndpointV2Fail
 	DbgLb4LookupBackendFail
 	DbgLb4ReverseNatLookup
 	DbgLb4ReverseNat
 	DbgLb4LoopbackSnat
 	DbgLb4LoopbackSnatRev
 	DbgCtLookup4
-	DbgRRSlaveSel
+	DbgRREndpointSel
 	DbgRevProxyLookup
 	DbgRevProxyFound
 	DbgRevProxyUpdate
@@ -288,30 +288,30 @@ func (n *DebugMsg) subTypeString() string {
 		return fmt.Sprintf("Going to the stack, policy-skip=%d", n.Arg1)
 	case DbgPktHash:
 		return fmt.Sprintf("Packet hash=%d (%#x), selected_service=%d", n.Arg1, n.Arg1, n.Arg2)
-	case DbgRRSlaveSel:
-		return fmt.Sprintf("RR slave selection hash=%d (%#x), selected_service=%d", n.Arg1, n.Arg1, n.Arg2)
-	case DbgLb6LookupMaster:
-		return fmt.Sprintf("Master service lookup, addr.p4=%x key.dport=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
-	case DbgLb6LookupMasterFail:
-		return fmt.Sprintf("Master service lookup failed, addr.p2=%x addr.p3=%x", n.Arg1, n.Arg2)
-	case DbgLb6LookupSlave, DbgLb4LookupSlave:
-		return fmt.Sprintf("Slave service lookup: slave=%d, dport=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
-	case DbgLb6LookupSlaveV2Fail, DbgLb4LookupSlaveV2Fail:
-		return fmt.Sprintf("Slave service lookup failed: slave=%d, dport=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
+	case DbgRREndpointSel:
+		return fmt.Sprintf("RR endpoint selection hash=%d (%#x), selected_service=%d", n.Arg1, n.Arg1, n.Arg2)
+	case DbgLb6LookupPrimary:
+		return fmt.Sprintf("Primary service lookup, addr.p4=%x key.dport=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
+	case DbgLb6LookupPrimaryFail:
+		return fmt.Sprintf("Primary service lookup failed, addr.p2=%x addr.p3=%x", n.Arg1, n.Arg2)
+	case DbgLb6LookupEndpoint, DbgLb4LookupEndpoint:
+		return fmt.Sprintf("Service endpoint lookup: endpoint=%d, dport=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
+	case DbgLb6LookupEndpointV2Fail, DbgLb4LookupEndpointV2Fail:
+		return fmt.Sprintf("Service endpoint lookup failed: endpoint=%d, dport=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
 	case DbgLb6LookupBackendFail, DbgLb4LookupBackendFail:
 		return fmt.Sprintf("Backend service lookup failed: backend_id=%d", n.Arg1)
-	case DbgLb6LookupSlaveSuccess:
-		return fmt.Sprintf("Slave service lookup result: target.p4=%x port=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
+	case DbgLb6LookupEndpointSuccess:
+		return fmt.Sprintf("Endpoint service lookup result: target.p4=%x port=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
 	case DbgLb6ReverseNatLookup, DbgLb4ReverseNatLookup:
 		return fmt.Sprintf("Reverse NAT lookup, index=%d", byteorder.NetworkToHost(uint16(n.Arg1)))
 	case DbgLb6ReverseNat:
 		return fmt.Sprintf("Performing reverse NAT, address.p4=%x port=%d", n.Arg1, byteorder.NetworkToHost(uint16(n.Arg2)))
-	case DbgLb4LookupMaster:
-		return fmt.Sprintf("Master service lookup, addr=%s key.dport=%d", ip4Str(n.Arg1), byteorder.NetworkToHost(uint16(n.Arg2)))
-	case DbgLb4LookupMasterFail:
-		return "Master service lookup failed"
-	case DbgLb4LookupSlaveSuccess:
-		return fmt.Sprintf("Slave service lookup result: target=%s port=%d", ip4Str(n.Arg1), byteorder.NetworkToHost(uint16(n.Arg2)))
+	case DbgLb4LookupPrimary:
+		return fmt.Sprintf("Primary service lookup, addr=%s key.dport=%d", ip4Str(n.Arg1), byteorder.NetworkToHost(uint16(n.Arg2)))
+	case DbgLb4LookupPrimaryFail:
+		return "Primary service lookup failed"
+	case DbgLb4LookupEndpointSuccess:
+		return fmt.Sprintf("Endpoint service lookup result: target=%s port=%d", ip4Str(n.Arg1), byteorder.NetworkToHost(uint16(n.Arg2)))
 	case DbgLb4ReverseNat:
 		return fmt.Sprintf("Performing reverse NAT, address=%s port=%d", ip4Str(n.Arg1), byteorder.NetworkToHost(uint16(n.Arg2)))
 	case DbgLb4LoopbackSnat:

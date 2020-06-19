@@ -149,18 +149,18 @@ func (in *pad3uint8) DeepCopyInto(out *pad3uint8) {
 // +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=github.com/cilium/cilium/pkg/bpf.MapKey
 type Service4Key struct {
-	Address types.IPv4 `align:"address"`
-	Port    uint16     `align:"dport"`
-	Slave   uint16     `align:"slave"`
-	Proto   uint8      `align:"proto"`
-	Pad     pad3uint8  `align:"pad"`
+	Address  types.IPv4 `align:"address"`
+	Port     uint16     `align:"dport"`
+	Endpoint uint16     `align:"endpoint"`
+	Proto    uint8      `align:"proto"`
+	Pad      pad3uint8  `align:"pad"`
 }
 
-func NewService4Key(ip net.IP, port uint16, proto u8proto.U8proto, slave uint16) *Service4Key {
+func NewService4Key(ip net.IP, port uint16, proto u8proto.U8proto, endpoint uint16) *Service4Key {
 	key := Service4Key{
-		Port:  port,
-		Proto: uint8(proto),
-		Slave: slave,
+		Port:     port,
+		Proto:    uint8(proto),
+		Endpoint: endpoint,
 	}
 
 	copy(key.Address[:], ip.To4())
@@ -176,8 +176,8 @@ func (k *Service4Key) GetKeyPtr() unsafe.Pointer { return unsafe.Pointer(k) }
 func (k *Service4Key) NewValue() bpf.MapValue    { return &Service4Value{} }
 func (k *Service4Key) IsIPv6() bool              { return false }
 func (k *Service4Key) Map() *bpf.Map             { return Service4MapV2 }
-func (k *Service4Key) SetSlave(slave int)        { k.Slave = uint16(slave) }
-func (k *Service4Key) GetSlave() int             { return int(k.Slave) }
+func (k *Service4Key) SetEndpoint(endpoint int)  { k.Endpoint = uint16(endpoint) }
+func (k *Service4Key) GetEndpoint() int          { return int(k.Endpoint) }
 func (k *Service4Key) GetAddress() net.IP        { return k.Address.IP() }
 func (k *Service4Key) GetPort() uint16           { return k.Port }
 func (k *Service4Key) MapDelete() error          { return k.Map().Delete(k.ToNetwork()) }

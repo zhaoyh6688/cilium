@@ -197,15 +197,15 @@ bool lb6_svc_is_hostport(const struct lb6_service *svc __maybe_unused)
 #endif /* ENABLE_HOSTPORT */
 }
 
-static __always_inline int lb6_select_slave(__u16 count)
+static __always_inline int lb6_select_endpoint(__u16 count)
 {
-	/* Slave 0 is reserved for the master slot */
+	/* Endpoint 0 is reserved for the primary slot */
 	return (get_prandom_u32() % count) + 1;
 }
 
-static __always_inline int lb4_select_slave(__u16 count)
+static __always_inline int lb4_select_endpoint(__u16 count)
 {
-	/* Slave 0 is reserved for the master slot */
+	/* Endpoint 0 is reserved for the primary slot */
 	return (get_prandom_u32() % count) + 1;
 }
 
@@ -392,13 +392,13 @@ static __always_inline int lb6_extract_key(struct __ctx_buff *ctx __maybe_unused
 static __always_inline
 struct lb6_service *lb6_lookup_service(struct lb6_key *key)
 {
-	key->slave = 0;
+	key->endpoint = 0;
 #ifdef LB_L4
 	if (key->dport) {
 		struct lb6_service *svc;
 
 		/* FIXME: The verifier barks on these calls right now for some reason */
-		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_MASTER, key->address, key->dport); */
+		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_PRIMARY, key->address, key->dport); */
 		svc = map_lookup_elem(&LB6_SERVICES_MAP_V2, key);
 		if (svc && svc->count != 0)
 			return svc;
@@ -412,7 +412,7 @@ struct lb6_service *lb6_lookup_service(struct lb6_key *key)
 		struct lb6_service *svc;
 
 		/* FIXME: The verifier barks on these calls right now for some reason */
-		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_MASTER, key->address, key->dport); */
+		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_PRIMARY, key->address, key->dport); */
 		svc = map_lookup_elem(&LB6_SERVICES_MAP_V2, key);
 		if (svc && svc->count != 0)
 			return svc;
@@ -440,25 +440,25 @@ lb6_lookup_backend(struct __ctx_buff *ctx __maybe_unused, __u16 backend_id)
 }
 
 static __always_inline
-struct lb6_service *__lb6_lookup_slave(struct lb6_key *key)
+struct lb6_service *__lb6_lookup_endpoint(struct lb6_key *key)
 {
 	return map_lookup_elem(&LB6_SERVICES_MAP_V2, key);
 }
 
 static __always_inline
-struct lb6_service *lb6_lookup_slave(struct __ctx_buff *ctx __maybe_unused,
-				     struct lb6_key *key, __u16 slave)
+struct lb6_service *lb6_lookup_endpoint(struct __ctx_buff *ctx __maybe_unused,
+				     struct lb6_key *key, __u16 endpoint)
 {
 	struct lb6_service *svc;
 
-	key->slave = slave;
-	cilium_dbg_lb(ctx, DBG_LB6_LOOKUP_SLAVE, key->slave, key->dport);
-	svc = __lb6_lookup_slave(key);
+	key->endpoint = endpoint;
+	cilium_dbg_lb(ctx, DBG_LB6_LOOKUP_ENDPOINT, key->endpoint, key->dport);
+	svc = __lb6_lookup_endpoint(key);
 	if (svc != NULL) {
 		return svc;
 	}
 
-	cilium_dbg_lb(ctx, DBG_LB6_LOOKUP_SLAVE_V2_FAIL, key->slave, key->dport);
+	cilium_dbg_lb(ctx, DBG_LB6_LOOKUP_ENDPOINT_V2_FAIL, key->endpoint, key->dport);
 
 	return NULL;
 }
@@ -600,8 +600,8 @@ static __always_inline int lb6_local(const void *map, struct __ctx_buff *ctx,
 	union v6addr *addr;
 	__u8 flags = tuple->flags;
 	struct lb6_backend *backend;
-	struct lb6_service *slave_svc;
-	int slave;
+	struct lb6_service *svc_endpoint;
+	int endpoint;
 	__u32 backend_id = 0;
 	bool backend_from_affinity = false;
 	int ret;
@@ -629,13 +629,13 @@ static __always_inline int lb6_local(const void *map, struct __ctx_buff *ctx,
 		if (backend_id == 0) {
 			backend_from_affinity = false;
 
-			slave = lb6_select_slave(svc->count);
-			if ((slave_svc = lb6_lookup_slave(ctx, key, slave)) == NULL)
+			endpoint = lb6_select_endpoint(svc->count);
+			if ((svc_endpoint = lb6_lookup_endpoint(ctx, key, endpoint)) == NULL)
 				goto drop_no_service;
 
-			backend_id = slave_svc->backend_id;
+			backend_id = svc_endpoint->backend_id;
 
-			backend = lb6_lookup_backend(ctx, slave_svc->backend_id);
+			backend = lb6_lookup_backend(ctx, svc_endpoint->backend_id);
 			if (backend == NULL)
 				goto drop_no_service;
 		}
@@ -674,10 +674,10 @@ static __always_inline int lb6_local(const void *map, struct __ctx_buff *ctx,
 		}
 #endif
 		if (backend_id == 0) {
-			slave = lb6_select_slave(svc->count);
-			if (!(slave_svc = lb6_lookup_slave(ctx, key, slave)))
+			endpoint = lb6_select_endpoint(svc->count);
+			if (!(svc_endpoint = lb6_lookup_endpoint(ctx, key, endpoint)))
 				goto drop_no_service;
-			backend_id = slave_svc->backend_id;
+			backend_id = svc_endpoint->backend_id;
 		}
 
 		state->backend_id = backend_id;
@@ -690,19 +690,19 @@ static __always_inline int lb6_local(const void *map, struct __ctx_buff *ctx,
 	 * session we are likely to get a TCP RST.
 	 */
 	if (!(backend = lb6_lookup_backend(ctx, state->backend_id))) {
-		key->slave = 0;
+		key->endpoint = 0;
 		if (!(svc = lb6_lookup_service(key))) {
 			goto drop_no_service;
 		}
-		slave = lb6_select_slave(svc->count);
-		if (!(slave_svc = lb6_lookup_slave(ctx, key, slave))) {
+		endpoint = lb6_select_endpoint(svc->count);
+		if (!(svc_endpoint = lb6_lookup_endpoint(ctx, key, endpoint))) {
 			goto drop_no_service;
 		}
-		backend = lb6_lookup_backend(ctx, slave_svc->backend_id);
+		backend = lb6_lookup_backend(ctx, svc_endpoint->backend_id);
 		if (backend == NULL) {
 			goto drop_no_service;
 		}
-		state->backend_id = slave_svc->backend_id;
+		state->backend_id = svc_endpoint->backend_id;
 		ct_update6_backend_id(map, tuple, state);
 	}
 
@@ -738,7 +738,7 @@ struct lb6_service *lb6_lookup_service(struct lb6_key *key __maybe_unused)
 }
 
 static __always_inline
-struct lb6_service *__lb6_lookup_slave(struct lb6_key *key __maybe_unused)
+struct lb6_service *__lb6_lookup_endpoint(struct lb6_key *key __maybe_unused)
 {
 	return NULL;
 }
@@ -879,13 +879,13 @@ static __always_inline int lb4_extract_key(struct __ctx_buff *ctx __maybe_unused
 static __always_inline
 struct lb4_service *lb4_lookup_service(struct lb4_key *key)
 {
-	key->slave = 0;
+	key->endpoint = 0;
 #ifdef LB_L4
 	if (key->dport) {
 		struct lb4_service *svc;
 
 		/* FIXME: The verifier barks on these calls right now for some reason */
-		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_MASTER, key->address, key->dport); */
+		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_PRIMARY, key->address, key->dport); */
 		svc = map_lookup_elem(&LB4_SERVICES_MAP_V2, key);
 		if (svc && svc->count != 0)
 			return svc;
@@ -899,7 +899,7 @@ struct lb4_service *lb4_lookup_service(struct lb4_key *key)
 		struct lb4_service *svc;
 
 		/* FIXME: The verifier barks on these calls right now for some reason */
-		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_MASTER, key->address, key->dport); */
+		/* cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_PRIMARY, key->address, key->dport); */
 		svc = map_lookup_elem(&LB4_SERVICES_MAP_V2, key);
 		if (svc && svc->count != 0)
 			return svc;
@@ -927,25 +927,25 @@ lb4_lookup_backend(struct __ctx_buff *ctx __maybe_unused, __u16 backend_id)
 }
 
 static __always_inline
-struct lb4_service *__lb4_lookup_slave(struct lb4_key *key)
+struct lb4_service *__lb4_lookup_endpoint(struct lb4_key *key)
 {
 	return map_lookup_elem(&LB4_SERVICES_MAP_V2, key);
 }
 
 static __always_inline
-struct lb4_service *lb4_lookup_slave(struct __ctx_buff *ctx __maybe_unused,
-				     struct lb4_key *key, __u16 slave)
+struct lb4_service *lb4_lookup_endpoint(struct __ctx_buff *ctx __maybe_unused,
+				     struct lb4_key *key, __u16 endpoint)
 {
 	struct lb4_service *svc;
 
-	key->slave = slave;
-	cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_SLAVE, key->slave, key->dport);
-	svc = __lb4_lookup_slave(key);
+	key->endpoint = endpoint;
+	cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_ENDPOINT, key->endpoint, key->dport);
+	svc = __lb4_lookup_endpoint(key);
 	if (svc != NULL) {
 		return svc;
 	}
 
-	cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_SLAVE_V2_FAIL, key->slave, key->dport);
+	cilium_dbg_lb(ctx, DBG_LB4_LOOKUP_ENDPOINT_V2_FAIL, key->endpoint, key->dport);
 
 	return NULL;
 }
@@ -1105,8 +1105,8 @@ static __always_inline int lb4_local(const void *map, struct __ctx_buff *ctx,
 	__be32 new_saddr = 0, new_daddr;
 	__u8 flags = tuple->flags;
 	struct lb4_backend *backend;
-	struct lb4_service *slave_svc;
-	int slave;
+	struct lb4_service *svc_endpoint;
+	int endpoint;
 	__u32 backend_id = 0;
 	bool backend_from_affinity = false;
 	int ret;
@@ -1134,11 +1134,11 @@ static __always_inline int lb4_local(const void *map, struct __ctx_buff *ctx,
 			backend_from_affinity = false;
 
 			/* No CT entry has been found, so select a svc endpoint */
-			slave = lb4_select_slave(svc->count);
-			if ((slave_svc = lb4_lookup_slave(ctx, key, slave)) == NULL)
+			endpoint = lb4_select_endpoint(svc->count);
+			if ((svc_endpoint = lb4_lookup_endpoint(ctx, key, endpoint)) == NULL)
 				goto drop_no_service;
 
-			backend_id = slave_svc->backend_id;
+			backend_id = svc_endpoint->backend_id;
 
 			backend = lb4_lookup_backend(ctx, backend_id);
 			if (backend == NULL)
@@ -1187,11 +1187,11 @@ static __always_inline int lb4_local(const void *map, struct __ctx_buff *ctx,
 		}
 #endif
 		if (backend_id == 0) {
-			slave = lb4_select_slave(svc->count);
-			if (!(slave_svc = lb4_lookup_slave(ctx, key, slave)))
+			endpoint = lb4_select_endpoint(svc->count);
+			if (!(svc_endpoint = lb4_lookup_endpoint(ctx, key, endpoint)))
 				goto drop_no_service;
 
-			backend_id = slave_svc->backend_id;
+			backend_id = svc_endpoint->backend_id;
 		}
 
 		state->backend_id = backend_id;
@@ -1204,19 +1204,19 @@ static __always_inline int lb4_local(const void *map, struct __ctx_buff *ctx,
 	 * session we are likely to get a TCP RST.
 	 */
 	if (!(backend = lb4_lookup_backend(ctx, state->backend_id))) {
-		key->slave = 0;
+		key->endpoint = 0;
 		if (!(svc = lb4_lookup_service(key))) {
 			goto drop_no_service;
 		}
-		slave = lb4_select_slave(svc->count);
-		if (!(slave_svc = lb4_lookup_slave(ctx, key, slave))) {
+		endpoint = lb4_select_endpoint(svc->count);
+		if (!(svc_endpoint = lb4_lookup_endpoint(ctx, key, endpoint))) {
 			goto drop_no_service;
 		}
-		backend = lb4_lookup_backend(ctx, slave_svc->backend_id);
+		backend = lb4_lookup_backend(ctx, svc_endpoint->backend_id);
 		if (backend == NULL) {
 			goto drop_no_service;
 		}
-		state->backend_id = slave_svc->backend_id;
+		state->backend_id = svc_endpoint->backend_id;
 		ct_update4_backend_id(map, tuple, state);
 	}
 
