@@ -48,7 +48,6 @@ import (
 	envoy_config_core "github.com/cilium/proxy/go/envoy/config/core/v3"
 	envoy_config_route "github.com/cilium/proxy/go/envoy/config/route/v3"
 	envoy_type_matcher "github.com/cilium/proxy/go/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
@@ -114,10 +113,7 @@ var (
 			},
 		},
 	}
-	googleRe2 = &envoy_type_matcher.RegexMatcher_GoogleRe2{
-		GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
-			MaxProgramSize: &wrappers.UInt32Value{Value: 100}, // Envoy default
-		}}
+	googleRe2 = &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}}
 
 	PNPAllowGETbar = cilium.PortNetworkPolicyRule_HttpRules{
 		HttpRules: &cilium.HttpNetworkPolicyRules{
