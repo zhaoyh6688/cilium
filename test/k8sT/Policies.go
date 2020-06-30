@@ -17,6 +17,7 @@ package k8sTest
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/cilium/cilium/api/v1/models"
@@ -193,6 +194,21 @@ var _ = Describe("K8sPolicyTest", func() {
 			namespaceForTest = helpers.GenerateNamespaceForTest("")
 			kubectl.NamespaceDelete(namespaceForTest)
 			kubectl.NamespaceCreate(namespaceForTest).ExpectSuccess("could not create namespace")
+
+			privilegedPSP := filepath.Join(kubectl.BasePath(), helpers.ProvisionPath, "privileged-psp.yaml")
+			kubectl.Apply(
+				helpers.ApplyOptions{
+					FilePath:  privilegedPSP,
+					Namespace: namespaceForTest,
+				},
+			).ExpectSuccess("Unable to deploy privileged-psp")
+
+			kubectlCmd := fmt.Sprintf("kubectl create -n %s "+
+				"rolebinding default:psp:privileged "+
+				"--role=privileged "+
+				"--serviceaccount=%s:default", namespaceForTest, namespaceForTest)
+			kubectl.Exec(kubectlCmd).ExpectSuccess("could not create PSP")
+
 			kubectl.Apply(helpers.ApplyOptions{FilePath: demoPath, Namespace: namespaceForTest}).ExpectSuccess("could not create resource")
 
 			err := kubectl.WaitforPods(namespaceForTest, "-l zgroup=testapp", helpers.HelperTimeout)
