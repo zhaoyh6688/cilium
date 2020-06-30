@@ -339,6 +339,12 @@ to_host:
 
 		cilium_dbg_capture(ctx, DBG_CAPTURE_DELIVERY, HOST_IFINDEX);
 		return redirect(HOST_IFINDEX, BPF_F_INGRESS);
+	} else if (is_defined(ENABLE_HOST_FIREWALL) && *dstID == HOST_ID) {
+		send_trace_notify(ctx, TRACE_TO_HOST, SECLABEL, HOST_ID, 0,
+				  HOST_IFINDEX, reason, monitor);
+
+		cilium_dbg_capture(ctx, DBG_CAPTURE_DELIVERY, HOST_IFINDEX);
+		return redirect(HOST_IFINDEX, BPF_F_INGRESS);
 	}
 #endif
 
@@ -698,6 +704,12 @@ to_host:
 		if (ret != CTX_ACT_OK)
 			return ret;
 
+		send_trace_notify(ctx, TRACE_TO_HOST, SECLABEL, HOST_ID, 0, HOST_IFINDEX,
+				  reason, monitor);
+
+		cilium_dbg_capture(ctx, DBG_CAPTURE_DELIVERY, HOST_IFINDEX);
+		return redirect(HOST_IFINDEX, BPF_F_INGRESS);
+	} else if (is_defined(ENABLE_HOST_FIREWALL) && *dstID == HOST_ID) {
 		send_trace_notify(ctx, TRACE_TO_HOST, SECLABEL, HOST_ID, 0, HOST_IFINDEX,
 				  reason, monitor);
 
