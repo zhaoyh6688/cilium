@@ -63,6 +63,7 @@ spec:
             name: hubble-sock-dir
             readOnly: true
       restartPolicy: Always
+      serviceAccountName: "hubble-relay"
       terminationGracePeriodSeconds: 0
       tolerations:
       - operator: Exists
