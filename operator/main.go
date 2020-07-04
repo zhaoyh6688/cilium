@@ -35,6 +35,7 @@ import (
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/metrics"
 	"github.com/cilium/cilium/pkg/option"
+	"github.com/cilium/cilium/pkg/rand"
 	"github.com/cilium/cilium/pkg/version"
 	gops "github.com/google/gops/agent"
 	"github.com/sirupsen/logrus"
@@ -46,6 +47,8 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 )
 
 var (
@@ -63,7 +66,7 @@ var (
 				os.Exit(0)
 			}
 			initEnv()
-			runOperator(cmd)
+			runOperator()
 		},
 	}
 
@@ -72,6 +75,8 @@ var (
 	shutdownSignal = make(chan struct{})
 
 	ciliumK8sClient clientset.Interface
+
+	contextCancelFunc context.CancelFunc
 )
 
 func initEnv() {
@@ -96,6 +101,7 @@ func main() {
 		<-signals
 		gops.Close()
 		close(shutdownSignal)
+		contextCancelFunc()
 	}()
 
 	// Open socket for using gops to get stacktraces of the agent.
@@ -128,7 +134,10 @@ func getAPIServerAddr() []string {
 	return []string{operatorOption.Config.OperatorAPIServeAddr}
 }
 
-func runOperator(cmd *cobra.Command) {
+// runOperator implements the logic of leader election for cilium-operator using
+// built-in leader election capbility in kubernetes.
+// See: https://github.com/kubernetes/client-go/blob/master/examples/leader-election/main.go
+func runOperator() {
 	log.Infof("Cilium Operator %s", version.Version)
 	k8sInitDone := make(chan struct{})
 	go startServer(shutdownSignal, k8sInitDone, getAPIServerAddr()...)
@@ -148,6 +157,77 @@ func runOperator(cmd *cobra.Command) {
 	}
 	close(k8sInitDone)
 
+	k8sversion.Update(k8s.Client(), option.Config)
+	if !k8sversion.Capabilities().MinimalVersionMet {
+		log.Fatalf("Minimal kubernetes version not met: %s < %s",
+			k8sversion.Version(), k8sversion.MinimalVersionConstraint)
+	}
+
+	// Get hostname for identity name of the lease lock holder.
+	// We identify the leader of the operator cluster using hostname.
+	hostID, err := os.Hostname()
+	if err != nil {
+		log.WithError(err).Fatal("failed to get hostname")
+	}
+	hostID = rand.RandomStringWithPrefix(hostID+"-", 8)
+	log.Infof("using host ID %s for operator POD", hostID)
+
+	ns := os.Getenv("NAMESPACE")
+	// If due to any reason the NAMESPACE is not set we assume it to be
+	// in default namespace.
+	if ns == "" {
+		ns = "default"
+	}
+	// Use a Go context so we can tell the leaderelection code when we
+	// want to step down
+	ctx, contextCancelFunc := context.WithCancel(context.Background())
+	defer contextCancelFunc()
+
+	leaseLock := &resourcelock.LeaseLock{
+		LeaseMeta: metav1.ObjectMeta{
+			Name:      "cilium-operator-lease-resource-lock",
+			Namespace: ns,
+		},
+		Client: k8s.Client().CoordinationV1(),
+		LockConfig: resourcelock.ResourceLockConfig{
+			// Identity name of theholder
+			Identity: hostID,
+		},
+	}
+
+	// Start the leader election for running cilium-operators
+	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+		Lock:            leaseLock,
+		ReleaseOnCancel: true,
+
+		LeaseDuration: 60 * time.Second,
+		RenewDeadline: 15 * time.Second,
+		RetryPeriod:   5 * time.Second,
+
+		Callbacks: leaderelection.LeaderCallbacks{
+			OnStartedLeading: onOperatorStartLeading,
+			OnStoppedLeading: func() {
+				log.Infof("leader election lost: %s", hostID)
+				// Cleanup everything here, and exit.
+				gops.Close()
+				close(shutdownSignal)
+				contextCancelFunc()
+				os.Exit(0)
+			},
+			OnNewLeader: func(identity string) {
+				if identity == hostID {
+					log.Info("leading the operator HA deployment")
+				} else {
+					log.Infof("new leader elected: %s", identity)
+				}
+			},
+		},
+	})
+}
+
+// onOperatorStartLeading is the function called once the operator starts leading
+// in HA mode.
+func onOperatorStartLeading(ctx context.Context) {
 	restConfig, err := k8s.CreateConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Unable to get Kubernetes client config")
@@ -157,11 +237,6 @@ func runOperator(cmd *cobra.Command) {
 		log.WithError(err).Fatal("Unable to create apiextensions client")
 	}
 	ciliumK8sClient = k8s.CiliumClient()
-	k8sversion.Update(k8s.Client(), option.Config)
-	if !k8sversion.Capabilities().MinimalVersionMet {
-		log.Fatalf("Minimal kubernetes version not met: %s < %s",
-			k8sversion.Version(), k8sversion.MinimalVersionConstraint)
-	}
 
 	// Restart kube-dns as soon as possible since it helps etcd-operator to be
 	// properly setup. If kube-dns is not managed by Cilium it can prevent
